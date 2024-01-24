@@ -58,8 +58,10 @@ def print_node_usage(data, only_gpus, gpu_filter, aliases):
         mem, mem_avail = props['RealMemory'] / 1000.0, props['RealMemory'] / 1000.0 - props['AllocMem'] / 1000.0
         mem_used = (mem - props['FreeMem'] / 1000.0) / (props['AllocMem'] / 1000.0 + 0.00001)
         mem_used = 0.0 if mem_used > 1 else mem_used
-        gpu_counts = next(iter(gpu_counts.values()), 0)
-        free_gpus = gpu_counts['total'] - gpu_counts['allocated']
+        free_gpus = -1
+        if len(gpu_counts) > 0:
+            gpu_counts = next(iter(gpu_counts.values()), 0)
+            free_gpus = gpu_counts['total'] - gpu_counts['allocated']
         gpu_avail_text = f"\033[91m{gpu_info}\033[0m" if cpu_avail == 0 or free_gpus == 0 else gpu_info
         print(f"{name:<15}cpu_aval:{cpu_avail:>2}/{props['CPUTot']:>2}\t"
               f"mem_aval:{mem_avail:>6.2f}/{mem:>6.2f}GB\tcpu_use:{props['CPULoad']:>5.2f}\t"
