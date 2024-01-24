@@ -9,6 +9,6 @@ The script is tailored for ETH's Euler system but should work on any SLURM setup
 
 Please note that a node may have available GPUs, but they will appear in red and won't be included in the count if the node lacks allocatable CPUs.
 
-Example (first column  the node name):
+Example (first column is the node name):
 ![image](https://github.com/manueldeprada/hpc_scripts/assets/6536835/b808c146-9a77-4b76-a7ea-ad8d16e02282)
 
