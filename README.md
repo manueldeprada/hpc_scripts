@@ -1,7 +1,11 @@
 # hpc_scripts
-I will share here some of my personal scripts for slurm and other HPC helpers.
+I share here some of my favorite scripts and commands for slurm.
 
-## resources.py
+## Scancel all your jobs
+`squeue -o '%i' --noheader | sed -z 's/\n/ /g; s/ $/\n/' | xargs scancel`
+
+
+## Resource avaliability script
 This script displays the availability of CPUs, memory, and GPUs, allowing you to make targeted requests to SLURM. For instance, you can optimize the number of cores, amount of memory, or types of GPUs you request.
 
 
