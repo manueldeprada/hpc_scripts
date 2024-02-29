@@ -7,3 +7,4 @@ compinit
 
 # Source antidote.
 source ${ZDOTDIR:-~}/.antidote/antidote.zsh
+antidote load ${ZDOTDIR:-$HOME}/.zsh_plugins.txt
