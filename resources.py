@@ -63,7 +63,7 @@ def print_node_usage(data, only_gpus, gpu_filter, aliases):
         name = f"{color}{name}"
         gpu_info, gpu_counts = parse_gpu_availability(node["gres"], node["gres_used"], aliases)
         cpu_avail = node['cpus'] - node['alloc_cpus']
-        if cpu_avail > 0 and ('IDLE' in node_state or 'MIXED' in node_state or 'ALLOCATED' in node_state):
+        if cpu_avail > 0 and ('IDLE' in node_state or 'MIXED' in node_state or 'ALLOCATED' in node_state) and 'RESERVED' not in node_state and 'PLANNED' not in node_state:
             for gpu, counts in gpu_counts.items():
                 if gpu in gpu_aggregate:
                     gpu_aggregate[gpu] += counts['total'] - counts['allocated']
