@@ -15,7 +15,7 @@ Please note that a node may have unusable free GPUs, if the node lacks available
 **update 7/3/24:** the script now displays the state of nodes.
 
 Example (first column is the node name):
-![image](https://github.com/manueldeprada/hpc_scripts/assets/6536835/b808c146-9a77-4b76-a7ea-ad8d16e02282)
+![image](https://github.com/manueldeprada/hpc_scripts/assets/6536835/0dea520e-e7f0-480a-90dc-f0c9e2e0cad1)
 
 ### nvitop
 `pip3 install nvitop`: great tool to monitor your GPU usage inside multigpu jobs
