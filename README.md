@@ -33,7 +33,7 @@ Example (first column is the node name):
 
 ### zsh quickstart
 ```
-dnf install zsh git curl
+dnf install zsh git curl util-linux-user
 chsh -s $(which zsh)
 wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zshrc
 wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zsh_plugins.txt
