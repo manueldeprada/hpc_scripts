@@ -38,3 +38,8 @@ chsh -s $(which zsh)
 wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zshrc
 wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zsh_plugins.txt
 ```
+
+### Prioritize conda env packages over user pip dir
+```
+export PYTHONPATH=$(find $CONDA_PREFIX -type d -name "site-packages" | head -n 1)
+```
