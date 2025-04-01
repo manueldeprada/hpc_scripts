@@ -1,7 +1,31 @@
 # hpc_scripts
 My HPC cheatsheet. I share here some of my favorite scripts and commands.
 
-## Slurm and GPUs stuff
+## General
+### Copy ssh pubkey
+`ssh-copy-id -i ~/.ssh/id_xx.pub u@server`
+
+### zsh quickstart
+```
+dnf install zsh git curl util-linux-user
+chsh -s $(which zsh)
+wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zshrc
+wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zsh_plugins.txt
+```
+### Set zsh as default shell
+```bash
+# .bash_profile
+if [ -t 1 ] && [ -x /cluster/software/stacks/2024-06/sfos/zsh ]; then
+    exec /cluster/software/stacks/2024-06/sfos/zsh
+fi
+```
+
+## launch vscode on a login node
+```bash
+ssh -t -L 8080:localhost:8080 mdeprada@eu-login-40.euler.ethz.ch 'module load stack code-server/4.89.1 && code-server --bind-addr 0.0.0.0:8080'
+```
+
+## Slurm and GPU jobs
 ### Scancel all your jobs
 `squeue -o '%i' --noheader | sed -z 's/\n/ /g; s/ $/\n/' | xargs scancel`
 
@@ -26,19 +50,7 @@ Example (first column is the node name):
 ### get an interactive gpu session
 `srun --pty --ntasks=1 --cpus-per-task=2 -t 3:59:00 --mem-per-cpu=15G --gpus=1 --gres=gpumem:24g bash`
 
-## General stuff
-
-### Copy ssh pubkey
-`ssh-copy-id -i ~/.ssh/id_xx.pub u@server`
-
-### zsh quickstart
-```
-dnf install zsh git curl util-linux-user
-chsh -s $(which zsh)
-wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zshrc
-wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zsh_plugins.txt
-```
-
+## Troubleshooting
 ### Prioritize conda env packages over user pip dir
 ```
 export PYTHONPATH=$(find $CONDA_PREFIX -type d -name "site-packages" | head -n 1)
