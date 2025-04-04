@@ -5,7 +5,11 @@ My HPC cheatsheet. I share here some of my favorite scripts and commands.
 ### Copy ssh pubkey
 `ssh-copy-id -i ~/.ssh/id_xx.pub u@server`
 
-### zsh quickstart
+### launch vscode on a login node
+```bash
+ssh -t -L 8080:localhost:8080 user@eu-login-xx.euler.ethz.ch 'module load stack code-server/4.89.1 && code-server --bind-addr 0.0.0.0:8080'
+```
+### zsh quicksetup
 ```
 dnf install zsh git curl util-linux-user
 chsh -s $(which zsh)
@@ -18,11 +22,6 @@ wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zsh_p
 if [ -t 1 ] && [ -x /cluster/software/stacks/2024-06/sfos/zsh ]; then
     exec /cluster/software/stacks/2024-06/sfos/zsh
 fi
-```
-
-## launch vscode on a login node
-```bash
-ssh -t -L 8080:localhost:8080 mdeprada@eu-login-40.euler.ethz.ch 'module load stack code-server/4.89.1 && code-server --bind-addr 0.0.0.0:8080'
 ```
 
 ## Slurm and GPU jobs
@@ -46,7 +45,11 @@ Example (first column is the node name):
 
 ### ssh into running job
 `srun --interactive --jobid <jobid> --pty bash`
-
+**update 4/2025:** since the Ubuntu update, `ssh node` also works.
+### direct ssh into a running node through a login node from your machine (i.e. to redirect ports)
+```bash
+ssh -J ssh -J user@euler.ethz.ch user@node.euler.ethz.ch
+```
 ### get an interactive gpu session
 `srun --pty --ntasks=1 --cpus-per-task=2 -t 3:59:00 --mem-per-cpu=15G --gpus=1 --gres=gpumem:24g bash`
 
