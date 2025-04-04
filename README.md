@@ -44,17 +44,21 @@ Example (first column is the node name):
 `pip3 install nvitop`: great tool to monitor your GPU usage inside multigpu jobs
 
 ### ssh into running job
-`srun --interactive --jobid <jobid> --pty bash`
+```bash
+srun --interactive --jobid <jobid> --pty bash
+```
 **update 4/2025:** since the Ubuntu update, `ssh node` also works.
 ### direct ssh into a running node through a login node from your machine (i.e. to redirect ports)
 ```bash
 ssh -J ssh -J user@euler.ethz.ch user@node.euler.ethz.ch
 ```
 ### get an interactive gpu session
-`srun --pty --ntasks=1 --cpus-per-task=2 -t 3:59:00 --mem-per-cpu=15G --gpus=1 --gres=gpumem:24g bash`
+```bash
+srun --pty --ntasks=1 --cpus-per-task=2 -t 3:59:00 --mem-per-cpu=15G --gpus=1 --gres=gpumem:24g bash
+```
 
 ## Troubleshooting
 ### Prioritize conda env packages over user pip dir
-```
+```bash
 export PYTHONPATH=$(find $CONDA_PREFIX -type d -name "site-packages" | head -n 1)
 ```
