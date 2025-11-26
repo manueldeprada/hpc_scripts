@@ -16,7 +16,20 @@ chsh -s $(which zsh)
 wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zshrc
 wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zsh_plugins.txt
 ```
-### Set zsh as default shell
+
+### fedora gpu quick bring-up
+```
+sudo dnf config-manager addrepo --from-repofile https://developer.download.nvidia.com/compute/cuda/repos/fedora42/x86_64/cuda-fedora42.repo
+sudo dnf -y install cuda-toolkit-13-0 nvidia-open patch htop
+sudo mkdir /var/swap
+sudo btrfs filesystem mkswapfile --size 32G /var/swap/swapfile
+sudo swapon /var/swap/swapfile
+code tunnel service install
+chmod 600 ~/.ssh/id_ed25519
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Set zsh as default shell in Euler
 ```bash
 # .bash_profile
 if [ -t 1 ] && [ -x /cluster/software/stacks/2024-06/sfos/zsh ]; then
