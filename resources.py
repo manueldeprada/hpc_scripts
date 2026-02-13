@@ -48,8 +48,8 @@ state_color_map = {
     'RESERVED': '\033[91m', # red
     'PLANNED': '\033[91m', # red
 }
-    
-    
+
+
 
 def print_node_usage(data, only_gpus, gpu_filter, aliases):
     gpu_aggregate = {}
@@ -80,19 +80,21 @@ def print_node_usage(data, only_gpus, gpu_filter, aliases):
             free_gpus = gpu_counts['total'] - gpu_counts['allocated']
         gpu_avail_text = f"\033[91m{gpu_info}\033[0m" if cpu_avail == 0 or free_gpus == 0 else gpu_info
         print(f"{name}\tcpu_aval:{cpu_avail:>2}/{node['cpus']:>2}  \t"
-              f"mem_aval:{mem_avail:>6.2f}/{mem:>6.2f}GB\tcpu_use:{node['cpu_load']['number']/100.0:>5.2f}\t"
+              f"mem_aval:{mem_avail:>6.2f}/{mem:>6.2f}GB\tcpu_use:{node['cpu_load']/100.0:>5.2f}\t"
               f"mem_use:{int(mem_used * 100):>3}%\t{gpu_avail_text}\tstate:{','.join(node_state)}")
     inv_dict = {v: k for k, v in aliases.items()}
-    print("\nAggregate of available GPUs:", *(f"{gpu}: {count}      \t slurm_code:{inv_dict[gpu]}" for gpu, count in gpu_aggregate.items()), sep="\n")
+    print("\n\033[0mAggregate of available GPUs:", *(f"{gpu}: {count}      \t slurm_code:{inv_dict[gpu]}" for gpu, count in gpu_aggregate.items()), sep="\n")
 
 def main():
     args = get_args()
     aliases = {
         "nvidia_v100-sxm2-32gb": "v100_32G", "nvidia_a100-pcie-40gb": "a100_40G",
         "quadro_rtx_6000": "Qrtx6000_24G", "nvidia_titan_rtx": "titanrtx_24G",
+        "nvidia_rtx_pro_6000": "pro6000_96G",
         "nvidia_geforce_rtx_3090": "rtx3090_24G", "nvidia_geforce_rtx_4090": "rtx4090_24G",
         "tesla_v100-sxm2-32gb": "v100_32G", "nvidia_a100_80gb_pcie": "a100_80G",
-        "nvidia_geforce_rtx_2080_ti": "rtx2080ti_11G", "nvidia_geforce_gtx_1080_ti": "gtx1080ti_11G"
+        "nvidia_geforce_rtx_2080_ti": "rtx2080ti_11G", "nvidia_geforce_gtx_1080_ti": "gtx1080ti_11G",
+        "amd_instinct_mi300a": "amd_mi300a_128G"
     }
     data = get_slurm_info()
     print_node_usage(data, args.only_gpus, args.gpu_filter, aliases)
@@ -101,4 +103,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
