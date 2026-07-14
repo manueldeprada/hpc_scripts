@@ -9,32 +9,34 @@ My HPC cheatsheet. I share here some of my favorite scripts and commands.
 ```bash
 ssh -t -L 8080:localhost:8080 user@eu-login-xx.euler.ethz.ch 'module load stack code-server/4.89.1 && code-server --bind-addr 0.0.0.0:8080'
 ```
-### zsh quicksetup — one command
-On any new machine (zsh must already be installed — see below to install it):
+### zsh quicksetup, one command
+On any machine, new or one you already use (zsh must be installed, see below):
 ```bash
 curl -fsSL https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/install.sh | sh
 exec zsh
 ```
 This clones the repo to `~/.hpc_scripts`, installs [starship](https://starship.rs)
-(replaces powerlevel10k), and writes a tiny `~/.zshrc` that sources the managed
-config. All plugins are managed by [antidote](https://github.com/mattmc3/antidote).
+(replaces powerlevel10k), and rewrites `~/.zshrc` to source the synced config near
+the top. Plugins are managed by [antidote](https://github.com/mattmc3/antidote).
 
 **Auto-sync:** every shell start checks GitHub for updates (throttled to once a
-day, in the background) and pulls the latest config **over HTTPS** — never SSH, so
-a machine without an SSH key can never hang on a key prompt. Push a change to this
+day, in the background) and pulls the latest config **over HTTPS**, never SSH, so a
+machine without an SSH key can never hang on a key prompt. Push a change to this
 repo and it lands on all your machines. The synced `bin/` scripts (`rtmux`, `duh`)
 and the starship prompt update the same way. Run **`zsync`** to force an update now
 and reload the shell instead of waiting for the daily check.
 
-**Per-machine config:** anything machine-specific (mamba/conda init, gpg-agent,
-`module load`s, gcloud, ...) goes in `~/.zshrc.local`, which is sourced at the end
-of the managed config and never touched by the sync.
+**Per-machine config:** put anything machine-specific (conda/mamba init, gpg-agent,
+`module load`s, gcloud, ...) **below the `source` line in `~/.zshrc`**. That part is
+never synced or overwritten, and it is exactly where tool installers append their
+own lines, so `conda init`, `gcloud`, `uv`, and friends just work with no extra
+setup. The synced config only owns the small block above.
 
-**Migrating a machine you already use:** just run the same install command. Your
-existing `~/.zshrc` is backed up (`~/.zshrc.pre-hpc.<timestamp>`) and its
-machine-specific lines are moved into `~/.zshrc.local`; the old managed bits
-(antidote bootstrap, powerlevel10k, the Alt+arrow bindkeys, the `~/.local/bin/env`
-line) are stripped since the synced config now provides them.
+**Migrating a machine you already use:** run the same install command. Your existing
+`~/.zshrc` is backed up to `~/.zshrc.pre-hpc.<timestamp>`, the `source` line is added
+at the top, and the old managed bits (antidote bootstrap, powerlevel10k, the
+Alt+arrow bindkeys, the `~/.local/bin/env` line) are stripped since the synced config
+now provides them. Everything else you had stays put as your local section.
 
 Install zsh first if needed:
 ```bash

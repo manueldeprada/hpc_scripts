@@ -1,14 +1,15 @@
 # ============================================================================
-#  hpc_scripts — managed zsh config
+#  hpc_scripts managed zsh config
 #  https://github.com/manueldeprada/hpc_scripts
 #
 #  This file is cloud-synced across all your machines and is overwritten on
-#  auto-update. DO NOT put machine-specific config here.
-#  Put per-machine config in ~/.zshrc.local (sourced at the very end).
+#  auto-update, so do NOT edit it for one machine. It is sourced near the top
+#  of ~/.zshrc; put machine-specific config below that source line in ~/.zshrc
+#  (that file is never synced), which is also where tool installers append.
 # ============================================================================
 
 : ${HPC_ZSH_DIR:="$HOME/.hpc_scripts"}
-# Public HTTPS URL — always used for updates so a machine without an SSH key
+# Public HTTPS URL, always used for updates so a machine without an SSH key
 # can never hang on a key/credential prompt (even if origin is an SSH remote).
 : ${HPC_ZSH_REMOTE:="https://github.com/manueldeprada/hpc_scripts.git"}
 
@@ -41,7 +42,7 @@ _hpc_zsh_autoupdate
 
 # Force an update right now, then reload the shell.
 zsync() {
-  echo "hpc_scripts: pulling latest zsh config over HTTPS…"
+  echo "hpc_scripts: pulling latest zsh config over HTTPS..."
   _hpc_zsh_pull || { echo "hpc_scripts: update failed (offline or local changes?)"; return 1; }
   mkdir -p "${_hpc_zsh_stamp:h}"; print -r -- "$(date +%s)" > "$_hpc_zsh_stamp"
   exec zsh
@@ -78,7 +79,5 @@ fi
 bindkey '^[[1;3C' forward-word     # Alt/Option + Right  -> forward one word
 bindkey '^[[1;3D' backward-word    # Alt/Option + Left   -> backward one word
 
-# ---------------------------------------------------------------------------
-# Machine-local config (NOT synced): mamba, gpg-agent, module loads, gcloud...
-# ---------------------------------------------------------------------------
-[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+# Machine-specific config is NOT sourced here. It lives below the `source` line
+# in ~/.zshrc, which runs right after this file returns.
