@@ -4,6 +4,8 @@
 #   right = environment + language info (conda/venv, docker, versions)
 # Python shows the active venv, not the version. Single line, no time.
 # Needs a Nerd Font: https://www.nerdfonts.com/
+# NOTE: generated so the powerline glyphs survive; edit freely, they are real
+# characters in this file.
 
 "$schema" = 'https://starship.rs/config-schema.json'
 
@@ -12,18 +14,17 @@ command_timeout = 1000   # HPC network filesystems can be slow
 
 # Left prompt: the gruvbox rainbow.
 format = """
-[](color_orange)\
+[](color_orange)\
 $os\
-[](bg:color_yellow fg:color_orange)\
+[](bg:color_yellow fg:color_orange)\
 $directory\
-[](fg:color_yellow bg:color_aqua)\
+[](fg:color_yellow bg:color_aqua)\
 $git_branch\
 $git_status\
-[](fg:color_aqua)\
+[](fg:color_aqua)\
  $character"""
 
-# Right prompt: environment first, then language versions. Plain colored text
-# (no powerline blocks) so it stays readable no matter how much shows up.
+# Right prompt: environment first, then language versions. Plain colored text.
 right_format = """
 $conda\
 $python\
@@ -37,8 +38,7 @@ $bun\
 $php\
 $java\
 $kotlin\
-$haskell\
-$julia"""
+$haskell"""
 
 palette = 'gruvbox_dark'
 
@@ -63,26 +63,26 @@ format = "[ $symbol ]($style)"
 [os.symbols]
 Windows = "󰍲"
 Ubuntu = "󰕈"
-SUSE = ""
+SUSE = ""
 Raspbian = "󰐿"
 Mint = "󰣭"
 Macos = "󰀵"
-Manjaro = ""
+Manjaro = ""
 Linux = "󰌽"
 Gentoo = "󰣨"
 Fedora = "󰣛"
-Alpine = ""
-Amazon = ""
-Android = ""
-AOSC = ""
+Alpine = ""
+Amazon = ""
+Android = ""
+AOSC = ""
 Arch = "󰣇"
 Artix = "󰣇"
-EndeavourOS = ""
-CentOS = ""
+EndeavourOS = ""
+CentOS = ""
 Debian = "󰣚"
 Redhat = "󱄛"
 RedHatEnterprise = "󱄛"
-Pop = ""
+Pop = ""
 
 [directory]
 style = "fg:color_fg0 bg:color_yellow"
@@ -98,7 +98,7 @@ truncation_symbol = "…/"
 "Developer" = "󰲋 "
 
 [git_branch]
-symbol = ""
+symbol = ""
 style = "bg:color_aqua"
 format = '[[ $symbol $branch ](fg:color_fg0 bg:color_aqua)]($style)'
 
@@ -109,83 +109,75 @@ format = '[[($all_status$ahead_behind )](fg:color_fg0 bg:color_aqua)]($style)'
 # ---- right-side environment ----
 
 [conda]
-symbol = " "
+symbol = "◯ "
 style = "fg:color_aqua"
 format = '[ $symbol$environment]($style)'
 
 # Show only that a venv is active (its name), never the python version.
 [python]
-symbol = " "
+symbol = " "
 style = "fg:color_green"
 format = '[ $symbol$virtualenv]($style)'
 
 [docker_context]
-symbol = " "
+symbol = " "
 style = "fg:color_blue"
 format = '[ $symbol$context]($style)'
 
 # ---- right-side language versions ----
 
 [c]
-symbol = " "
+symbol = " "
 style = "fg:color_blue"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [cpp]
-symbol = " "
+symbol = " "
 style = "fg:color_blue"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [rust]
-symbol = ""
+symbol = ""
 style = "fg:color_red"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [golang]
-symbol = ""
+symbol = ""
 style = "fg:color_blue"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [nodejs]
-symbol = ""
+symbol = ""
 style = "fg:color_green"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [bun]
-symbol = ""
+symbol = ""
 style = "fg:color_green"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [php]
-symbol = ""
+symbol = ""
 style = "fg:color_purple"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [java]
-symbol = ""
+symbol = ""
 style = "fg:color_red"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [kotlin]
-symbol = ""
+symbol = ""
 style = "fg:color_purple"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [haskell]
-symbol = ""
+symbol = ""
 style = "fg:color_purple"
-format = '[ $symbol($version)]($style)'
-
-[julia]
-symbol = ""
-style = "fg:color_purple"
-format = '[ $symbol($version)]($style)'
+format = '[ $symbol( $version)]($style)'
 
 [character]
 disabled = false
-success_symbol = '[](bold fg:color_green)'
-error_symbol = '[](bold fg:color_red)'
-vimcmd_symbol = '[](bold fg:color_green)'
-vimcmd_replace_one_symbol = '[](bold fg:color_purple)'
-vimcmd_replace_symbol = '[](bold fg:color_purple)'
-vimcmd_visual_symbol = '[](bold fg:color_yellow)'
+success_symbol = '[](bold fg:color_green)'
+error_symbol = '[](bold fg:color_red)'
+vimcmd_symbol = '[](bold fg:color_green)'
