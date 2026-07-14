@@ -121,6 +121,12 @@ fi
 autoload -Uz compinit && compinit
 
 source ${ZDOTDIR:-$HOME}/.antidote/antidote.zsh
+
+# Drop a broken/empty antidote cache (e.g. left by an earlier failed run) so it
+# is regenerated instead of sourced empty, which silently loads no plugins.
+[[ -f "$HPC_ZSH_DIR/zsh/.zsh_plugins.zsh" && ! -s "$HPC_ZSH_DIR/zsh/.zsh_plugins.zsh" ]] &&
+  rm -f "$HPC_ZSH_DIR/zsh/.zsh_plugins.zsh"
+
 antidote load "$HPC_ZSH_DIR/zsh/.zsh_plugins.txt"
 
 # ---------------------------------------------------------------------------
