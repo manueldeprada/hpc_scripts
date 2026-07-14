@@ -38,7 +38,9 @@ $bun\
 $php\
 $java\
 $kotlin\
-$haskell"""
+$haskell\
+$username\
+$hostname"""
 
 palette = 'gruvbox_dark'
 
@@ -175,6 +177,18 @@ format = '[ $symbol( $version)]($style)'
 symbol = ""
 style = "fg:color_purple"
 format = '[ $symbol( $version)]($style)'
+
+# Right side: user@host, shown only over SSH (or as root), like p10k's context.
+[username]
+show_always = false
+style_user = "fg:color_yellow"
+style_root = "fg:color_red"
+format = '[ $user]($style)'
+
+[hostname]
+ssh_only = true
+style = "fg:color_yellow"
+format = '[@$hostname]($style)'
 
 [character]
 disabled = false
