@@ -20,14 +20,21 @@ This clones the repo to `~/.hpc_scripts`, installs [starship](https://starship.r
 config. All plugins are managed by [antidote](https://github.com/mattmc3/antidote).
 
 **Auto-sync:** every shell start checks GitHub for updates (throttled to once a
-day, in the background) and `git pull`s the latest config, so every machine stays
-in sync. Push a change to this repo and it lands on all your machines. The synced
-`~/.local/bin` scripts (`rtmux`, `duh`) and the starship prompt update the same way.
+day, in the background) and pulls the latest config **over HTTPS** — never SSH, so
+a machine without an SSH key can never hang on a key prompt. Push a change to this
+repo and it lands on all your machines. The synced `bin/` scripts (`rtmux`, `duh`)
+and the starship prompt update the same way. Run **`zsync`** to force an update now
+and reload the shell instead of waiting for the daily check.
 
 **Per-machine config:** anything machine-specific (mamba/conda init, gpg-agent,
 `module load`s, gcloud, ...) goes in `~/.zshrc.local`, which is sourced at the end
-of the managed config and never touched by the sync. On first install, any
-pre-existing `~/.zshrc` is preserved by moving it there.
+of the managed config and never touched by the sync.
+
+**Migrating a machine you already use:** just run the same install command. Your
+existing `~/.zshrc` is backed up (`~/.zshrc.pre-hpc.<timestamp>`) and its
+machine-specific lines are moved into `~/.zshrc.local`; the old managed bits
+(antidote bootstrap, powerlevel10k, the Alt+arrow bindkeys, the `~/.local/bin/env`
+line) are stripped since the synced config now provides them.
 
 Install zsh first if needed:
 ```bash

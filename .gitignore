@@ -1,0 +1,3 @@
+# antidote compiles this next to the plugins file; it is machine-specific
+# (absolute paths to cloned plugins) and regenerated on each machine.
+zsh/.zsh_plugins.zsh

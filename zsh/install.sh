@@ -44,15 +44,46 @@ else
   fi
 fi
 
-# 3. Preserve any existing (non-managed) ~/.zshrc as machine-local config -----
+# 3. Migrate any existing (non-managed) ~/.zshrc into ~/.zshrc.local -----------
+#    Strips the bits now handled by the synced config (antidote bootstrap,
+#    powerlevel10k, the Alt+arrow bindkeys, the ~/.local/bin/env line) and keeps
+#    only your machine-specific lines. A full, untouched backup is always saved,
+#    and existing ~/.zshrc.local content is appended to, never overwritten.
 if [ -f "$HOME/.zshrc" ] && ! grep -q "HPC_ZSH_DIR" "$HOME/.zshrc" 2>/dev/null; then
-  if [ ! -f "$HOME/.zshrc.local" ]; then
-    echo "--> moving existing ~/.zshrc -> ~/.zshrc.local (kept as machine-local config)"
-    mv "$HOME/.zshrc" "$HOME/.zshrc.local"
-  else
-    echo "--> ~/.zshrc.local already exists; saving old ~/.zshrc as ~/.zshrc.pre-hpc"
-    mv "$HOME/.zshrc" "$HOME/.zshrc.pre-hpc"
-  fi
+  backup="$HOME/.zshrc.pre-hpc.$(date +%s)"
+  cp "$HOME/.zshrc" "$backup"
+  echo "--> full backup saved: $backup"
+
+  awkf="$(mktemp)"
+  cat > "$awkf" <<'AWK'
+/^if \[\[ -r .*p10k-instant-prompt/ { skip = 1; next }
+skip && /^fi[[:space:]]*$/ { skip = 0; next }
+skip { next }
+/antidote/ { next }
+/^[[:space:]]*autoload -Uz compinit/ { next }
+/^[[:space:]]*compinit[[:space:]]*$/ { next }
+/p10k/ { next }
+/\.local\/bin\/env/ { next }
+/bindkey.*forward-word/ { next }
+/bindkey.*backward-word/ { next }
+/# Clone antidote if necessary/ { next }
+/# Source antidote/ { next }
+/# Enable Powerlevel10k instant prompt/ { next }
+/require console input/ { next }
+/everything else may go below/ { next }
+/# To customize prompt, run/ { next }
+{ print }
+AWK
+
+  {
+    echo "# ~/.zshrc.local — machine-specific config (NOT synced)."
+    echo "# Sourced at the end of the hpc_scripts managed config. Bits now managed"
+    echo "# (antidote, starship, bindkeys, PATH) were stripped. Full backup: $backup"
+    echo ""
+    awk -f "$awkf" "$HOME/.zshrc" | cat -s
+  } >> "$HOME/.zshrc.local"
+  rm -f "$awkf"
+  echo "--> machine-specific lines -> ~/.zshrc.local"
 fi
 
 # 4. Write the managed stub ~/.zshrc -----------------------------------------

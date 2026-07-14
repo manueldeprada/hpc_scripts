@@ -8,24 +8,44 @@
 # ============================================================================
 
 : ${HPC_ZSH_DIR:="$HOME/.hpc_scripts"}
+# Public HTTPS URL — always used for updates so a machine without an SSH key
+# can never hang on a key/credential prompt (even if origin is an SSH remote).
+: ${HPC_ZSH_REMOTE:="https://github.com/manueldeprada/hpc_scripts.git"}
+
+_hpc_zsh_stamp="${XDG_CACHE_HOME:-$HOME/.cache}/hpc_zsh_lastupdate"
+
+# Pull the latest config over HTTPS, with all interactive prompts disabled so
+# it fails fast instead of blocking the shell if auth is ever needed.
+_hpc_zsh_pull() {
+  [[ -d "$HPC_ZSH_DIR/.git" ]] || return 1
+  GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes' \
+    git -C "$HPC_ZSH_DIR" pull --ff-only "$@" "$HPC_ZSH_REMOTE"
+}
 
 # ---------------------------------------------------------------------------
 # Auto-update: pull the latest config from GitHub, at most once a day, in the
 # background so it never blocks or slows down shell startup. Changes apply on
-# the next shell launch.
+# the next shell launch. Run `zsync` to force an update now.
 # ---------------------------------------------------------------------------
 _hpc_zsh_autoupdate() {
   [[ -d "$HPC_ZSH_DIR/.git" ]] || return
-  local stamp="${XDG_CACHE_HOME:-$HOME/.cache}/hpc_zsh_lastupdate"
   local now last=0
   now=$(date +%s)
-  [[ -f "$stamp" ]] && last=$(cat "$stamp" 2>/dev/null || echo 0)
+  [[ -f "$_hpc_zsh_stamp" ]] && last=$(cat "$_hpc_zsh_stamp" 2>/dev/null || echo 0)
   (( now - last < 86400 )) && return          # 86400s = 24h
-  mkdir -p "${stamp:h}"
-  print -r -- "$now" > "$stamp"
-  ( git -C "$HPC_ZSH_DIR" pull --ff-only --quiet >/dev/null 2>&1 & )
+  mkdir -p "${_hpc_zsh_stamp:h}"
+  print -r -- "$now" > "$_hpc_zsh_stamp"
+  ( _hpc_zsh_pull --quiet >/dev/null 2>&1 & )
 }
 _hpc_zsh_autoupdate
+
+# Force an update right now, then reload the shell.
+zsync() {
+  echo "hpc_scripts: pulling latest zsh config over HTTPS…"
+  _hpc_zsh_pull || { echo "hpc_scripts: update failed (offline or local changes?)"; return 1; }
+  mkdir -p "${_hpc_zsh_stamp:h}"; print -r -- "$(date +%s)" > "$_hpc_zsh_stamp"
+  exec zsh
+}
 
 # ---------------------------------------------------------------------------
 # PATH: user-local bin (uv, pipx, ...) + the repo's synced scripts (rtmux, duh)
