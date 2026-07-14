@@ -19,6 +19,19 @@ This clones the repo to `~/.hpc_scripts`, installs [starship](https://starship.r
 (replaces powerlevel10k), and rewrites `~/.zshrc` to source the synced config near
 the top. Plugins are managed by [antidote](https://github.com/mattmc3/antidote).
 
+**Opt-outs:** pass flags after `-s --` to skip parts of the setup (any subset):
+```bash
+curl -fsSL https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/install.sh | sh -s -- --no-update --no-scripts --no-claude-sync
+```
+| flag | effect |
+|------|--------|
+| `--no-update` | no automatic daily update (you can still run `zsync` by hand) |
+| `--no-scripts` | do not add the `bin/` scripts (`rtmux`, `duh`) to PATH |
+| `--no-claude-sync` | do not sync `~/.claude/CLAUDE.md` |
+
+Each flag writes an `export HPC_ZSH_NO_*=1` line near the top of `~/.zshrc`; add or
+remove those lines later to change it without rerunning the installer.
+
 **Auto-sync:** every shell start checks GitHub for updates (throttled to once a
 day, in the background) and pulls the latest config **over HTTPS**, never SSH, so a
 machine without an SSH key can never hang on a key prompt. Push a change to this

@@ -29,6 +29,7 @@ _hpc_zsh_pull() {
 # the next shell launch. Run `zsync` to force an update now.
 # ---------------------------------------------------------------------------
 _hpc_zsh_autoupdate() {
+  [[ -n "${HPC_ZSH_NO_UPDATE:-}" ]] && return   # disabled via install --no-update
   [[ -d "$HPC_ZSH_DIR/.git" ]] || return
   local now last=0
   now=$(date +%s)
@@ -62,6 +63,7 @@ _hpc_sha() {
 }
 
 _hpc_sync_claudemd() {
+  [[ -n "${HPC_ZSH_NO_CLAUDE_SYNC:-}" ]] && return   # disabled via install --no-claude-sync
   [[ -d "$HOME/.claude" ]] || return          # only where Claude Code is set up
   local repo="$HPC_ZSH_DIR/claude/CLAUDE.md"
   local dest="$HOME/.claude/CLAUDE.md"
@@ -96,9 +98,14 @@ _hpc_sync_claudemd() {
 _hpc_sync_claudemd
 
 # ---------------------------------------------------------------------------
-# PATH: user-local bin (uv, pipx, ...) + the repo's synced scripts (rtmux, duh)
+# PATH: user-local bin (uv, pipx, ...) + the repo's synced scripts (rtmux, duh).
+# --no-scripts (HPC_ZSH_NO_SCRIPTS) leaves the repo bin/ off PATH.
 # ---------------------------------------------------------------------------
-export PATH="$HOME/.local/bin:$HPC_ZSH_DIR/zsh/bin:$PATH"
+if [[ -n "${HPC_ZSH_NO_SCRIPTS:-}" ]]; then
+  export PATH="$HOME/.local/bin:$PATH"
+else
+  export PATH="$HOME/.local/bin:$HPC_ZSH_DIR/zsh/bin:$PATH"
+fi
 
 # Some clusters load zsh from a module directory that is not on $PATH, which
 # breaks tools that shell out to `zsh` (antidote and friends). If zsh is not on

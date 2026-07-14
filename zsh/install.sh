@@ -5,6 +5,7 @@
 #
 #  Usage (on any machine, new or existing):
 #    curl -fsSL https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/install.sh | sh
+#    ... | sh -s -- --no-update --no-scripts --no-claude-sync   # opt-outs (any subset)
 #
 #  What it does:
 #    1. Clones (or updates) the repo to ~/.hpc_scripts
@@ -21,6 +22,43 @@ set -eu
 
 REPO_URL="https://github.com/manueldeprada/hpc_scripts.git"
 HPC_ZSH_DIR="${HPC_ZSH_DIR:-$HOME/.hpc_scripts}"
+
+# --- options (pass after `-s --`, e.g. `... | sh -s -- --no-update`) ----------
+NO_UPDATE=0
+NO_SCRIPTS=0
+NO_CLAUDE=0
+
+usage() {
+  cat >&2 <<EOF
+hpc_scripts zsh setup. Usage:
+  curl -fsSL .../zsh/install.sh | sh [-s -- FLAGS]
+
+Flags (any subset):
+  --no-update       do not auto-update from GitHub (you can still run \`zsync\`)
+  --no-scripts      do not add the bin/ scripts (rtmux, duh) to PATH
+  --no-claude-sync  do not sync ~/.claude/CLAUDE.md
+  -h, --help        show this help
+EOF
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-update)      NO_UPDATE=1 ;;
+    --no-scripts)     NO_SCRIPTS=1 ;;
+    --no-claude-sync) NO_CLAUDE=1 ;;
+    -h|--help)        usage; exit 0 ;;
+    *) echo "install.sh: unknown option: $1" >&2; usage; exit 1 ;;
+  esac
+  shift
+done
+
+# Env-var lines written into ~/.zshrc (above the source line) so the managed
+# config skips whatever the flags turned off.
+opts_block() {
+  if [ "$NO_UPDATE" = 1 ];  then echo 'export HPC_ZSH_NO_UPDATE=1'; fi
+  if [ "$NO_SCRIPTS" = 1 ]; then echo 'export HPC_ZSH_NO_SCRIPTS=1'; fi
+  if [ "$NO_CLAUDE" = 1 ];  then echo 'export HPC_ZSH_NO_CLAUDE_SYNC=1'; fi
+}
 
 echo "==> hpc_scripts zsh setup"
 
@@ -59,6 +97,7 @@ header() {
 # Put machine-specific config BELOW this line. This file is never synced and
 # never overwritten by updates, so tool installers that append here just work.
 export HPC_ZSH_DIR="$HPC_ZSH_DIR"
+$(opts_block)
 source "\$HPC_ZSH_DIR/zsh/zshrc"
 
 # ===== machine-local config below =====
