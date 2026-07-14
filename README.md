@@ -38,6 +38,17 @@ at the top, and the old managed bits (antidote bootstrap, powerlevel10k, the
 Alt+arrow bindkeys, the `~/.local/bin/env` line) are stripped since the synced config
 now provides them. Everything else you had stays put as your local section.
 
+**Global Claude config:** `~/.claude/CLAUDE.md` is synced too. The canonical copy
+is `claude/CLAUDE.md` in this repo; each shell start copies it into place. If a
+machine's local `~/.claude/CLAUDE.md` was edited by hand, the sync does not
+overwrite it, it prints a loud warning so you can either discard the local change
+or promote it into `claude/CLAUDE.md` and push. The repo is public, so keep that
+file free of anything private.
+
+**zsh not on PATH:** on clusters where zsh is loaded from a module directory that
+is not on `$PATH` (so antidote fails with `command not found: zsh`), the config
+adds the running zsh binary's directory to `$PATH` automatically.
+
 Install zsh first if needed:
 ```bash
 # Fedora/RHEL

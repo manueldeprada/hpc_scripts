@@ -49,9 +49,68 @@ zsync() {
 }
 
 # ---------------------------------------------------------------------------
+# Sync ~/.claude/CLAUDE.md (global Claude preferences) from the repo. The repo
+# copy is canonical. If this machine's copy was changed locally, warn loudly
+# instead of overwriting, so a local change is never silently lost.
+# ---------------------------------------------------------------------------
+_hpc_sha() {
+  local o
+  if (( ${+commands[sha256sum]} )); then o=$(sha256sum "$1" 2>/dev/null)
+  elif (( ${+commands[shasum]} )); then o=$(shasum -a 256 "$1" 2>/dev/null)
+  else o=$(cksum "$1" 2>/dev/null); fi
+  print -r -- "${o%% *}"
+}
+
+_hpc_sync_claudemd() {
+  [[ -d "$HOME/.claude" ]] || return          # only where Claude Code is set up
+  local repo="$HPC_ZSH_DIR/claude/CLAUDE.md"
+  local dest="$HOME/.claude/CLAUDE.md"
+  local basef="${XDG_CACHE_HOME:-$HOME/.cache}/hpc_claudemd_base"
+  [[ -f "$repo" ]] || return
+  local rh dh bh
+  rh=$(_hpc_sha "$repo")
+  [[ -f "$dest" ]] && dh=$(_hpc_sha "$dest") || dh=""
+  [[ -f "$basef" ]] && bh=$(<"$basef") || bh=""
+
+  if [[ -z "$dh" ]]; then                      # no local copy yet: install it
+    mkdir -p "${dest:h}"; cp "$repo" "$dest"; print -r -- "$rh" >| "$basef"; return
+  fi
+  if [[ "$dh" == "$rh" ]]; then                # already in sync
+    print -r -- "$rh" >| "$basef"; return
+  fi
+  if [[ "$dh" == "$bh" ]]; then                # local untouched, repo moved on
+    cp "$repo" "$dest"; print -r -- "$rh" >| "$basef"; return
+  fi
+  # Local diverged from both repo and last-synced baseline: warn, do not touch.
+  print -P "%B%F{red}"
+  print '  ===================================================================='
+  print '   WARNING: something was added to ~/.claude/CLAUDE.md on THIS machine.'
+  print '   It differs from the synced (repo) version of the global config.'
+  print ''
+  print '     discard it:  rm ~/.claude/CLAUDE.md   (restored from sync next shell)'
+  print "     keep it:     cp ~/.claude/CLAUDE.md $HPC_ZSH_DIR/claude/CLAUDE.md"
+  print '                  then commit and push so every machine gets it'
+  print '  ===================================================================='
+  print -P "%f%b"
+}
+_hpc_sync_claudemd
+
+# ---------------------------------------------------------------------------
 # PATH: user-local bin (uv, pipx, ...) + the repo's synced scripts (rtmux, duh)
 # ---------------------------------------------------------------------------
 export PATH="$HOME/.local/bin:$HPC_ZSH_DIR/zsh/bin:$PATH"
+
+# Some clusters load zsh from a module directory that is not on $PATH, which
+# breaks tools that shell out to `zsh` (antidote and friends). If zsh is not on
+# PATH, add the directory of the running zsh binary (Linux: /proc/self/exe).
+if (( ! ${+commands[zsh]} )) && [[ -e /proc/self/exe ]]; then
+  _hpc_zdir=${${:-/proc/self/exe}:A:h}
+  if [[ -x "$_hpc_zdir/zsh" ]]; then
+    path=("$_hpc_zdir" $path)
+    rehash
+  fi
+  unset _hpc_zdir
+fi
 
 # ---------------------------------------------------------------------------
 # antidote plugin manager
