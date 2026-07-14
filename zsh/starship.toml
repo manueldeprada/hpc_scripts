@@ -11,6 +11,7 @@
 
 add_newline = false
 command_timeout = 1000   # HPC network filesystems can be slow
+scan_timeout = 500       # cluster dirs behind a proxy scan slower than the 30ms default
 
 # Left prompt: the gruvbox rainbow.
 format = """
