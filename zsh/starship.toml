@@ -121,6 +121,11 @@ format = '[ $symbol$environment]($style)'
 symbol = " "
 style = "fg:color_green"
 format = '[ $symbol$virtualenv]($style)'
+# Trigger only on an active venv (still a trigger); disabling file detection
+# hides the lone icon in Python dirs that have no venv.
+detect_extensions = []
+detect_files = []
+detect_folders = []
 
 [docker_context]
 symbol = " "
