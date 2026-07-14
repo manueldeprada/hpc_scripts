@@ -28,6 +28,7 @@ curl -fsSL https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/
 | `--no-update` | no automatic daily update (you can still run `zsync` by hand) |
 | `--no-scripts` | do not add the `bin/` scripts (`rtmux`, `duh`) to PATH |
 | `--no-claude-sync` | do not sync `~/.claude/CLAUDE.md` |
+| `--no-tmux-sync` | do not sync `~/.tmux.conf` |
 
 Each flag writes an `export HPC_ZSH_NO_*=1` line near the top of `~/.zshrc`; add or
 remove those lines later to change it without rerunning the installer.
@@ -51,12 +52,12 @@ at the top, and the old managed bits (antidote bootstrap, powerlevel10k, the
 Alt+arrow bindkeys, the `~/.local/bin/env` line) are stripped since the synced config
 now provides them. Everything else you had stays put as your local section.
 
-**Global Claude config:** `~/.claude/CLAUDE.md` is synced too. The canonical copy
-is `claude/CLAUDE.md` in this repo; each shell start copies it into place. If a
-machine's local `~/.claude/CLAUDE.md` was edited by hand, the sync does not
-overwrite it, it prints a loud warning so you can either discard the local change
-or promote it into `claude/CLAUDE.md` and push. The repo is public, so keep that
-file free of anything private.
+**Synced dotfiles:** `~/.claude/CLAUDE.md` (canonical: `claude/CLAUDE.md`) and
+`~/.tmux.conf` (canonical: `tmux/tmux.conf`) are synced too. Each shell start
+copies the repo copy into place. If a machine's local copy was edited by hand,
+the sync does not overwrite it, it prints a loud warning so you can either discard
+the local change (`rm` the file) or promote it into the repo copy and push. The
+repo is public, so keep these files free of anything private.
 
 **zsh not on PATH:** on clusters where zsh is loaded from a module directory that
 is not on `$PATH` (so antidote fails with `command not found: zsh`), the config

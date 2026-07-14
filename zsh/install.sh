@@ -27,6 +27,7 @@ HPC_ZSH_DIR="${HPC_ZSH_DIR:-$HOME/.hpc_scripts}"
 NO_UPDATE=0
 NO_SCRIPTS=0
 NO_CLAUDE=0
+NO_TMUX=0
 
 usage() {
   cat >&2 <<EOF
@@ -37,6 +38,7 @@ Flags (any subset):
   --no-update       do not auto-update from GitHub (you can still run \`zsync\`)
   --no-scripts      do not add the bin/ scripts (rtmux, duh) to PATH
   --no-claude-sync  do not sync ~/.claude/CLAUDE.md
+  --no-tmux-sync    do not sync ~/.tmux.conf
   -h, --help        show this help
 EOF
 }
@@ -46,6 +48,7 @@ while [ $# -gt 0 ]; do
     --no-update)      NO_UPDATE=1 ;;
     --no-scripts)     NO_SCRIPTS=1 ;;
     --no-claude-sync) NO_CLAUDE=1 ;;
+    --no-tmux-sync)   NO_TMUX=1 ;;
     -h|--help)        usage; exit 0 ;;
     *) echo "install.sh: unknown option: $1" >&2; usage; exit 1 ;;
   esac
@@ -58,6 +61,7 @@ opts_block() {
   if [ "$NO_UPDATE" = 1 ];  then echo 'export HPC_ZSH_NO_UPDATE=1'; fi
   if [ "$NO_SCRIPTS" = 1 ]; then echo 'export HPC_ZSH_NO_SCRIPTS=1'; fi
   if [ "$NO_CLAUDE" = 1 ];  then echo 'export HPC_ZSH_NO_CLAUDE_SYNC=1'; fi
+  if [ "$NO_TMUX" = 1 ];    then echo 'export HPC_ZSH_NO_TMUX_SYNC=1'; fi
 }
 
 echo "==> hpc_scripts zsh setup"

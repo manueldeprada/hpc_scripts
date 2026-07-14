@@ -50,9 +50,9 @@ zsync() {
 }
 
 # ---------------------------------------------------------------------------
-# Sync ~/.claude/CLAUDE.md (global Claude preferences) from the repo. The repo
-# copy is canonical. If this machine's copy was changed locally, warn loudly
-# instead of overwriting, so a local change is never silently lost.
+# Sync dotfiles from the repo (canonical copy). If a machine's copy was changed
+# locally, warn loudly instead of overwriting, so a local change is never lost.
+# Disable per file with install flags (--no-claude-sync, --no-tmux-sync).
 # ---------------------------------------------------------------------------
 _hpc_sha() {
   local o
@@ -62,12 +62,10 @@ _hpc_sha() {
   print -r -- "${o%% *}"
 }
 
-_hpc_sync_claudemd() {
-  [[ -n "${HPC_ZSH_NO_CLAUDE_SYNC:-}" ]] && return   # disabled via install --no-claude-sync
-  [[ -d "$HOME/.claude" ]] || return          # only where Claude Code is set up
-  local repo="$HPC_ZSH_DIR/claude/CLAUDE.md"
-  local dest="$HOME/.claude/CLAUDE.md"
-  local basef="${XDG_CACHE_HOME:-$HOME/.cache}/hpc_claudemd_base"
+# _hpc_sync_file <repo-relative-path> <dest> <cache-key>
+_hpc_sync_file() {
+  local repo="$HPC_ZSH_DIR/$1" dest="$2"
+  local basef="${XDG_CACHE_HOME:-$HOME/.cache}/hpc_${3}_base"
   [[ -f "$repo" ]] || return
   local rh dh bh
   rh=$(_hpc_sha "$repo")
@@ -85,17 +83,23 @@ _hpc_sync_claudemd() {
   fi
   # Local diverged from both repo and last-synced baseline: warn, do not touch.
   print -P "%B%F{red}"
-  print '  ===================================================================='
-  print '   WARNING: something was added to ~/.claude/CLAUDE.md on THIS machine.'
-  print '   It differs from the synced (repo) version of the global config.'
-  print ''
-  print '     discard it:  rm ~/.claude/CLAUDE.md   (restored from sync next shell)'
-  print "     keep it:     cp ~/.claude/CLAUDE.md $HPC_ZSH_DIR/claude/CLAUDE.md"
-  print '                  then commit and push so every machine gets it'
-  print '  ===================================================================='
+  print "  =================================================================="
+  print "   WARNING: $dest was changed on THIS machine and differs from the"
+  print "   synced (repo) version."
+  print ""
+  print "     discard it:  rm $dest   (restored from sync on the next shell)"
+  print "     keep it:     cp $dest $repo   then commit and push"
+  print "  =================================================================="
   print -P "%f%b"
 }
-_hpc_sync_claudemd
+
+# ~/.claude/CLAUDE.md (only where Claude Code is set up)
+[[ -n "${HPC_ZSH_NO_CLAUDE_SYNC:-}" ]] || [[ ! -d "$HOME/.claude" ]] ||
+  _hpc_sync_file "claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md" claudemd
+
+# ~/.tmux.conf
+[[ -n "${HPC_ZSH_NO_TMUX_SYNC:-}" ]] ||
+  _hpc_sync_file "tmux/tmux.conf" "$HOME/.tmux.conf" tmuxconf
 
 # ---------------------------------------------------------------------------
 # PATH: user-local bin (uv, pipx, ...) + the repo's synced scripts (rtmux, duh).
