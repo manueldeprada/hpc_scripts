@@ -407,9 +407,11 @@ export AUTOSSH_POLL="${AUTOSSH_POLL:-15}"
 
 if [ -n "$SESSION" ]; then
   QSESSION="$(shell_quote "$SESSION")"
-  REMOTE_CMD="tmux new-session -A -s $QSESSION"
+  # -u forces UTF-8 output so Nerd Font glyphs render even when the remote
+  # command shell starts in a non-UTF-8 locale (unlike an interactive login).
+  REMOTE_CMD="tmux -u new-session -A -s $QSESSION"
 else
-  REMOTE_CMD="tmux attach || tmux new-session"
+  REMOTE_CMD="tmux -u attach || tmux -u new-session"
 fi
 
 REAL_SSH="$(command -v ssh)"
