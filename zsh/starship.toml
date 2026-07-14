@@ -1,0 +1,49 @@
+# hpc_scripts — shared starship prompt config (synced across machines)
+# Docs: https://starship.rs/config/
+# A Nerd Font (https://www.nerdfonts.com/) is recommended for the glyphs below.
+
+add_newline = true
+command_timeout = 1000   # HPC network filesystems can be slow; avoid warnings
+
+format = """
+$directory\
+$git_branch\
+$git_status\
+$conda\
+$python\
+$cmd_duration\
+$line_break\
+$character"""
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+style = "bold cyan"
+
+[git_branch]
+symbol = " "
+style = "bold purple"
+
+[git_status]
+style = "bold red"
+
+# Show the active conda/mamba environment — important for HPC/Python work.
+[conda]
+symbol = " "
+format = "[$symbol$environment]($style) "
+style = "bold green"
+ignore_base = false
+
+[python]
+symbol = " "
+format = '[${symbol}${version}]($style) '
+style = "bold yellow"
+
+[cmd_duration]
+min_time = 2000
+format = "[ $duration]($style) "
+style = "bold yellow"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"

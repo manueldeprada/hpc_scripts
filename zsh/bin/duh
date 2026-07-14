@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+#
+# duh [directory]
+#
+# Incremental equivalent of:
+#   du -sh ./* | sort -h
+#
+# Results remain sorted after each completed entry.
+# The last line shows the entry currently being computed.
+# When finished, the status line is removed.
+
+set -Eeuo pipefail
+
+target="${1:-.}"
+
+if [[ ! -d "$target" ]]; then
+    printf 'duh: not a directory: %s\n' "$target" >&2
+    exit 1
+fi
+
+command -v numfmt >/dev/null 2>&1 || {
+    printf 'duh: numfmt is required (GNU coreutils)\n' >&2
+    exit 1
+}
+
+# Remove trailing slashes, except for filesystem root.
+while [[ "$target" != "/" && "$target" == */ ]]; do
+    target="${target%/}"
+done
+
+shopt -s nullglob
+entries=("$target"/*)
+
+total=${#entries[@]}
+completed=0
+rendered_lines=0
+
+results=$(mktemp)
+
+cleanup() {
+    rm -f "$results"
+}
+
+interrupt() {
+    printf '\r\033[K\n'
+    exit 130
+}
+
+trap cleanup EXIT
+trap interrupt INT TERM
+
+format_results() {
+    sort -n "$results" |
+        numfmt \
+            --field=1 \
+            --to=iec \
+            --suffix=B \
+            --padding=7
+}
+
+redraw() {
+    local current=$1
+    local output=""
+    local line_count=0
+    local extra_lines=0
+    local i
+
+    if [[ -s "$results" ]]; then
+        output=$(format_results)
+        line_count=$(printf '%s\n' "$output" | wc -l)
+    fi
+
+    # Clear current status line.
+    printf '\r\033[K'
+
+    # Move to the first previously rendered result line.
+    if ((rendered_lines > 0)); then
+        printf '\033[%dA' "$rendered_lines"
+    fi
+
+    # Rewrite sorted results.
+    if [[ -n "$output" ]]; then
+        while IFS= read -r line; do
+            printf '\r\033[K%s\n' "$line"
+        done <<<"$output"
+    fi
+
+    # Clear leftover lines, if any.
+    extra_lines=$((rendered_lines - line_count))
+
+    if ((extra_lines > 0)); then
+        for ((i = 0; i < extra_lines; i++)); do
+            printf '\r\033[K\n'
+        done
+        printf '\033[%dA' "$extra_lines"
+    fi
+
+    printf '\r\033[K[%d/%d] computing: %s' \
+        "$completed" \
+        "$total" \
+        "$current"
+
+    rendered_lines=$line_count
+}
+
+finish() {
+    local output=""
+
+    if [[ -s "$results" ]]; then
+        output=$(format_results)
+    fi
+
+    # Clear status line and move to the top of the rendered block.
+    printf '\r\033[K'
+
+    if ((rendered_lines > 0)); then
+        printf '\033[%dA' "$rendered_lines"
+    fi
+
+    # Render the final sorted output once.
+    if [[ -n "$output" ]]; then
+        while IFS= read -r line; do
+            printf '\r\033[K%s\n' "$line"
+        done <<<"$output"
+    fi
+}
+
+if ((total == 0)); then
+    exit 0
+fi
+
+printf '[0/%d] starting…' "$total"
+
+for entry in "${entries[@]}"; do
+    redraw "$entry"
+
+    size=$(
+        du -s --block-size=1 -- "$entry" 2>/dev/null |
+            awk '{print $1}'
+    )
+
+    printf '%s\t%s\n' "$size" "$entry" >>"$results"
+    ((completed += 1))
+done
+
+finish

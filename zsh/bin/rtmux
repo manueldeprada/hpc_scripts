@@ -1,0 +1,449 @@
+#!/bin/sh
+set -eu
+
+configure_ssh() {
+  python3 - <<'PY'
+from pathlib import Path
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+ssh_dir = Path.home() / ".ssh"
+config_path = ssh_dir / "config"
+
+START = "# >>> rtmux managed ssh defaults >>>"
+END = "# <<< rtmux managed ssh defaults <<<"
+
+BLOCK = f"""{START}
+Host *
+  IgnoreUnknown UseKeychain
+  ServerAliveInterval 15
+  ServerAliveCountMax 2
+  StrictHostKeyChecking accept-new
+  AddKeysToAgent yes
+  UseKeychain yes
+{END}
+"""
+
+ssh_dir.mkdir(mode=0o700, exist_ok=True)
+
+try:
+    ssh_dir.chmod(0o700)
+except PermissionError:
+    pass
+
+old = ""
+if config_path.exists():
+    old = config_path.read_text()
+
+if old.count(START) != old.count(END):
+    print(
+        f"Refusing to edit {config_path}: found mismatched rtmux managed block markers.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+pattern = re.compile(
+    rf"\n*{re.escape(START)}.*?{re.escape(END)}\n*",
+    flags=re.DOTALL,
+)
+without_managed = pattern.sub("\n", old).lstrip("\n")
+
+new = BLOCK
+if without_managed.strip():
+    new += "\n" + without_managed.rstrip() + "\n"
+else:
+    new += "\n"
+
+if old == new:
+    print(f"{config_path} already contains the current rtmux SSH defaults.")
+    sys.exit(0)
+
+backup_path = None
+if config_path.exists():
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    backup_path = config_path.with_name(f"config.rtmux.bak-{timestamp}")
+    shutil.copy2(config_path, backup_path)
+
+tmp_path = config_path.with_name("config.rtmux.tmp")
+tmp_path.write_text(new)
+tmp_path.chmod(0o600)
+os.replace(tmp_path, config_path)
+
+try:
+    config_path.chmod(0o600)
+except PermissionError:
+    pass
+
+# Syntax/effective-config validation. This does not connect.
+result = subprocess.run(
+    ["ssh", "-G", "__rtmux_config_test__"],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.PIPE,
+    text=True,
+)
+
+if result.returncode != 0:
+    if backup_path is not None:
+        shutil.copy2(backup_path, config_path)
+        print(f"SSH config validation failed. Restored backup: {backup_path}", file=sys.stderr)
+    else:
+        try:
+            config_path.unlink()
+        except FileNotFoundError:
+            pass
+        print("SSH config validation failed. Removed newly created config.", file=sys.stderr)
+
+    print(result.stderr.strip(), file=sys.stderr)
+    sys.exit(1)
+
+if backup_path is not None:
+    print(f"Updated {config_path}")
+    print(f"Backup saved to {backup_path}")
+else:
+    print(f"Created {config_path}")
+
+print()
+print("Managed block:")
+print(BLOCK.rstrip())
+PY
+}
+
+shell_quote() {
+  printf "'"
+  printf "%s" "$1" | sed "s/'/'\\\\''/g"
+  printf "'"
+}
+
+usage() {
+  echo "Usage:" >&2
+  echo "  $0 --configure-ssh" >&2
+  echo "  $0 [--wait|--no-wait] [-J jump_host] user@remote_host [session_name]" >&2
+  echo >&2
+  echo "Examples:" >&2
+  echo "  $0 mdeprada@eu-login-13.euler.ethz.ch" >&2
+  echo "  $0 -J middle-ssh mdeprada@eu-login-13.euler.ethz.ch main" >&2
+  echo "  $0 -J bastion1,bastion2 user@remote main" >&2
+  echo "  $0 --no-wait user@remote main" >&2
+}
+
+first_jump() {
+  printf "%s" "$1" | awk -F, '{print $1}'
+}
+
+ssh_config_value() {
+  target="$1"
+  key="$2"
+
+  ssh -G "$target" 2>/dev/null \
+    | awk -v k="$key" 'tolower($1) == tolower(k) {
+        $1 = "";
+        sub(/^ /, "");
+        print;
+        exit
+      }'
+}
+
+fallback_host_from_target() {
+  target="$1"
+
+  # Fallback only. Proper ssh config parsing is handled by ssh -G first.
+  # Handles common forms:
+  #   user@host
+  #   host
+  #   host:port
+  #   [ipv6-address]
+  printf "%s" "$target" \
+    | sed 's/.*@//' \
+    | sed 's/^\[//' \
+    | sed 's/\]$//' \
+    | sed 's/:.*$//'
+}
+
+choose_check_target() {
+  remote="$1"
+  jump="$2"
+
+  if [ -n "$jump" ]; then
+    first_jump "$jump"
+    return
+  fi
+
+  # If the user's ~/.ssh/config already has ProxyJump, wait for the first jump host.
+  proxyjump="$(ssh_config_value "$remote" proxyjump || true)"
+
+  if [ -n "$proxyjump" ] && [ "$proxyjump" != "none" ]; then
+    first_jump "$proxyjump"
+    return
+  fi
+
+  printf "%s" "$remote"
+}
+
+resolve_endpoint() {
+  target="$1"
+
+  host="$(ssh_config_value "$target" hostname || true)"
+  port="$(ssh_config_value "$target" port || true)"
+
+  if [ -z "$host" ]; then
+    host="$(fallback_host_from_target "$target")"
+  fi
+
+  if [ -z "$port" ]; then
+    port="22"
+  fi
+
+  printf "%s %s\n" "$host" "$port"
+}
+
+make_waiting_ssh_wrapper() {
+  check_target="$1"
+  real_ssh="$2"
+
+  set -- $(resolve_endpoint "$check_target")
+  check_host="$1"
+  check_port="$2"
+
+  wait_interval="${RTMUX_WAIT_INTERVAL:-5}"
+  connect_timeout="${RTMUX_CONNECT_TIMEOUT:-3}"
+  wait_check="${RTMUX_WAIT_CHECK:-tcp}"
+
+  wrapper="${TMPDIR:-/tmp}/rtmux-ssh-wrapper-$$"
+
+  cat > "$wrapper" <<EOF
+#!/bin/sh
+set -eu
+
+HOST=$(shell_quote "$check_host")
+PORT=$(shell_quote "$check_port")
+REAL_SSH=$(shell_quote "$real_ssh")
+INTERVAL=$(shell_quote "$wait_interval")
+TIMEOUT=$(shell_quote "$connect_timeout")
+CHECK_MODE=$(shell_quote "$wait_check")
+
+terminal_sane() {
+  # Recover the local terminal after ssh -> tmux -> fullscreen app leaves it
+  # in alternate-screen / mouse-reporting mode after a disconnect.
+  if [ -t 0 ]; then
+    stty sane < /dev/tty >/dev/null 2>&1 || true
+  fi
+
+  # Disable common mouse reporting modes:
+  # 1000 basic mouse
+  # 1002 button-event mouse
+  # 1003 any-event mouse
+  # 1004 focus events
+  # 1005 UTF-8 mouse
+  # 1006 SGR mouse
+  # 1015 urxvt mouse
+  printf '\\033[?1000l\\033[?1002l\\033[?1003l\\033[?1004l\\033[?1005l\\033[?1006l\\033[?1015l' > /dev/tty 2>/dev/null || true
+
+  # Leave alternate/fullscreen screen buffer.
+  printf '\\033[?1049l\\033[?1048l\\033[?47l' > /dev/tty 2>/dev/null || true
+
+  # Show cursor, enable wrapping, reset styles/charset/keypad mode.
+  printf '\\033[?25h\\033[?7h\\033[0m\\033(B\\033>' > /dev/tty 2>/dev/null || true
+}
+
+waiting_screen() {
+  terminal_sane
+  printf '\\033[2J\\033[H' > /dev/tty 2>/dev/null || true
+}
+
+check_tcp() {
+  if command -v nc >/dev/null 2>&1; then
+    nc -z -w "\$TIMEOUT" "\$HOST" "\$PORT" >/dev/null 2>&1
+  else
+    ping -c 1 "\$HOST" >/dev/null 2>&1
+  fi
+}
+
+check_ping() {
+  ping -c 1 "\$HOST" >/dev/null 2>&1
+}
+
+check_once() {
+  case "\$CHECK_MODE" in
+    tcp)
+      check_tcp
+      ;;
+    ping)
+      check_ping
+      ;;
+    auto)
+      check_tcp || check_ping
+      ;;
+    *)
+      check_tcp
+      ;;
+  esac
+}
+
+on_signal() {
+  terminal_sane
+  exit 130
+}
+
+on_exit() {
+  terminal_sane
+}
+
+trap on_signal INT TERM HUP
+trap on_exit EXIT
+
+if ! check_once; then
+  waiting_screen
+  printf "rtmux: waiting for internet/SSH reachability to %s:%s" "\$HOST" "\$PORT" > /dev/tty 2>/dev/null || true
+
+  while ! check_once; do
+    printf "." > /dev/tty 2>/dev/null || true
+    sleep "\$INTERVAL"
+  done
+
+  printf "\\nrtmux: connection reachable; starting ssh.\\n" > /dev/tty 2>/dev/null || true
+fi
+
+# Do not exec. We want control back after ssh exits so we can reset
+# terminal modes before autossh restarts the next attempt.
+"\$REAL_SSH" "\$@"
+status=\$?
+
+terminal_sane
+exit "\$status"
+EOF
+
+  chmod 700 "$wrapper"
+  printf "%s\n" "$wrapper"
+}
+
+JUMP=""
+WAIT_FOR_CONNECTION=1
+
+if [ "${1:-}" = "--configure-ssh" ]; then
+  if [ "$#" -ne 1 ]; then
+    usage
+    exit 1
+  fi
+
+  configure_ssh
+  exit 0
+fi
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -J)
+      shift
+      if [ "$#" -eq 0 ]; then
+        echo "rtmux: -J requires a jump host argument" >&2
+        usage
+        exit 1
+      fi
+      JUMP="$1"
+      shift
+      ;;
+
+    -J*)
+      JUMP="${1#-J}"
+      if [ -z "$JUMP" ]; then
+        echo "rtmux: -J requires a jump host argument" >&2
+        usage
+        exit 1
+      fi
+      shift
+      ;;
+
+    --jump)
+      shift
+      if [ "$#" -eq 0 ]; then
+        echo "rtmux: --jump requires a jump host argument" >&2
+        usage
+        exit 1
+      fi
+      JUMP="$1"
+      shift
+      ;;
+
+    --wait)
+      WAIT_FOR_CONNECTION=1
+      shift
+      ;;
+
+    --no-wait)
+      WAIT_FOR_CONNECTION=0
+      shift
+      ;;
+
+    --)
+      shift
+      break
+      ;;
+
+    -*)
+      echo "rtmux: unknown option: $1" >&2
+      usage
+      exit 1
+      ;;
+
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  usage
+  exit 1
+fi
+
+REMOTE="$1"
+SESSION="${2:-}"
+
+export AUTOSSH_GATETIME="${AUTOSSH_GATETIME:-0}"
+export AUTOSSH_POLL="${AUTOSSH_POLL:-15}"
+
+if [ -n "$SESSION" ]; then
+  QSESSION="$(shell_quote "$SESSION")"
+  REMOTE_CMD="tmux new-session -A -s $QSESSION"
+else
+  REMOTE_CMD="tmux attach || tmux new-session"
+fi
+
+REAL_SSH="$(command -v ssh)"
+WRAPPER=""
+
+cleanup() {
+  if [ -n "${WRAPPER:-}" ]; then
+    rm -f "$WRAPPER"
+  fi
+}
+
+trap cleanup EXIT INT TERM HUP
+
+if [ "$WAIT_FOR_CONNECTION" -eq 1 ]; then
+  CHECK_TARGET="$(choose_check_target "$REMOTE" "$JUMP")"
+  WRAPPER="$(make_waiting_ssh_wrapper "$CHECK_TARGET" "$REAL_SSH")"
+  export AUTOSSH_PATH="$WRAPPER"
+fi
+
+if [ -n "$JUMP" ]; then
+  autossh -M 0 -t \
+    -J "$JUMP" \
+    -o BatchMode=yes \
+    -o StrictHostKeyChecking=accept-new \
+    -o ConnectTimeout=10 \
+    -o ServerAliveInterval=15 \
+    -o ServerAliveCountMax=2 \
+    "$REMOTE" "$REMOTE_CMD"
+else
+  autossh -M 0 -t \
+    -o BatchMode=yes \
+    -o StrictHostKeyChecking=accept-new \
+    -o ConnectTimeout=10 \
+    -o ServerAliveInterval=15 \
+    -o ServerAliveCountMax=2 \
+    "$REMOTE" "$REMOTE_CMD"
+fi

@@ -1,0 +1,64 @@
+# ============================================================================
+#  hpc_scripts — managed zsh config
+#  https://github.com/manueldeprada/hpc_scripts
+#
+#  This file is cloud-synced across all your machines and is overwritten on
+#  auto-update. DO NOT put machine-specific config here.
+#  Put per-machine config in ~/.zshrc.local (sourced at the very end).
+# ============================================================================
+
+: ${HPC_ZSH_DIR:="$HOME/.hpc_scripts"}
+
+# ---------------------------------------------------------------------------
+# Auto-update: pull the latest config from GitHub, at most once a day, in the
+# background so it never blocks or slows down shell startup. Changes apply on
+# the next shell launch.
+# ---------------------------------------------------------------------------
+_hpc_zsh_autoupdate() {
+  [[ -d "$HPC_ZSH_DIR/.git" ]] || return
+  local stamp="${XDG_CACHE_HOME:-$HOME/.cache}/hpc_zsh_lastupdate"
+  local now last=0
+  now=$(date +%s)
+  [[ -f "$stamp" ]] && last=$(cat "$stamp" 2>/dev/null || echo 0)
+  (( now - last < 86400 )) && return          # 86400s = 24h
+  mkdir -p "${stamp:h}"
+  print -r -- "$now" > "$stamp"
+  ( git -C "$HPC_ZSH_DIR" pull --ff-only --quiet >/dev/null 2>&1 & )
+}
+_hpc_zsh_autoupdate
+
+# ---------------------------------------------------------------------------
+# PATH: user-local bin (uv, pipx, ...) + the repo's synced scripts (rtmux, duh)
+# ---------------------------------------------------------------------------
+export PATH="$HOME/.local/bin:$HPC_ZSH_DIR/zsh/bin:$PATH"
+
+# ---------------------------------------------------------------------------
+# antidote plugin manager
+# ---------------------------------------------------------------------------
+[[ -e ${ZDOTDIR:-$HOME}/.antidote ]] ||
+  git clone --depth=1 https://github.com/mattmc3/antidote.git ${ZDOTDIR:-$HOME}/.antidote
+
+autoload -Uz compinit && compinit
+
+source ${ZDOTDIR:-$HOME}/.antidote/antidote.zsh
+antidote load "$HPC_ZSH_DIR/zsh/.zsh_plugins.txt"
+
+# ---------------------------------------------------------------------------
+# starship prompt (replaces powerlevel10k). Config is synced from the repo.
+# Install: curl -sS https://starship.rs/install.sh | sh
+# ---------------------------------------------------------------------------
+if command -v starship >/dev/null 2>&1; then
+  export STARSHIP_CONFIG="$HPC_ZSH_DIR/zsh/starship.toml"
+  eval "$(starship init zsh)"
+fi
+
+# ---------------------------------------------------------------------------
+# Keybindings
+# ---------------------------------------------------------------------------
+bindkey '^[[1;3C' forward-word     # Alt/Option + Right  -> forward one word
+bindkey '^[[1;3D' backward-word    # Alt/Option + Left   -> backward one word
+
+# ---------------------------------------------------------------------------
+# Machine-local config (NOT synced): mamba, gpg-agent, module loads, gcloud...
+# ---------------------------------------------------------------------------
+[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

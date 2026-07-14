@@ -9,12 +9,33 @@ My HPC cheatsheet. I share here some of my favorite scripts and commands.
 ```bash
 ssh -t -L 8080:localhost:8080 user@eu-login-xx.euler.ethz.ch 'module load stack code-server/4.89.1 && code-server --bind-addr 0.0.0.0:8080'
 ```
-### zsh quicksetup
+### zsh quicksetup — one command
+On any new machine (zsh must already be installed — see below to install it):
+```bash
+curl -fsSL https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/install.sh | sh
+exec zsh
 ```
+This clones the repo to `~/.hpc_scripts`, installs [starship](https://starship.rs)
+(replaces powerlevel10k), and writes a tiny `~/.zshrc` that sources the managed
+config. All plugins are managed by [antidote](https://github.com/mattmc3/antidote).
+
+**Auto-sync:** every shell start checks GitHub for updates (throttled to once a
+day, in the background) and `git pull`s the latest config, so every machine stays
+in sync. Push a change to this repo and it lands on all your machines. The synced
+`~/.local/bin` scripts (`rtmux`, `duh`) and the starship prompt update the same way.
+
+**Per-machine config:** anything machine-specific (mamba/conda init, gpg-agent,
+`module load`s, gcloud, ...) goes in `~/.zshrc.local`, which is sourced at the end
+of the managed config and never touched by the sync. On first install, any
+pre-existing `~/.zshrc` is preserved by moving it there.
+
+Install zsh first if needed:
+```bash
+# Fedora/RHEL
 dnf install zsh git curl util-linux-user
-chsh -s $(which zsh)
-wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zshrc
-wget https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/.zsh_plugins.txt
+# Debian/Ubuntu
+apt install zsh git curl
+chsh -s "$(which zsh)"   # make zsh the default shell (see Euler note below if chsh is unavailable)
 ```
 
 ### fedora gpu quick bring-up
