@@ -58,6 +58,23 @@ apt install zsh git curl
 chsh -s "$(which zsh)"   # make zsh the default shell (see Euler note below if chsh is unavailable)
 ```
 
+### synced scripts: rtmux and duh
+The setup puts two scripts from `zsh/bin/` on your PATH, kept up to date with the rest of the config.
+
+**`rtmux`**: reconnecting tmux over SSH. It wraps `autossh` to hold an SSH connection to a host and attach to (or create) a `tmux` session, reattaching by itself after network drops or laptop sleep. Supports jump hosts, waits for connectivity before dialing, and restores the local terminal after a disconnect. Needs `autossh` locally and `tmux` on the remote.
+```bash
+rtmux user@host                  # attach to (or create) the default session
+rtmux user@host main             # named session "main"
+rtmux -J bastion user@host main  # through a jump host (also -J b1,b2)
+rtmux --configure-ssh            # write ssh keepalive defaults to ~/.ssh/config
+```
+
+**`duh`**: incremental `du -sh ./* | sort -h`. Prints the size of each entry in the current (or given) directory, sorted by size and updated live as each one finishes, with a status line for the entry being measured. Needs GNU coreutils.
+```bash
+duh          # current directory
+duh /path    # a specific directory
+```
+
 ### fedora gpu quick bring-up
 ```
 sudo dnf config-manager addrepo --from-repofile https://developer.download.nvidia.com/compute/cuda/repos/fedora42/x86_64/cuda-fedora42.repo
