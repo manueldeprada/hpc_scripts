@@ -41,12 +41,14 @@ machine (laptop, HPC login nodes, personal servers) in sync from this repo.
   `source "$HPC_ZSH_DIR/zsh/zshrc"` near the top. Machine-local config lives BELOW
   that source line in `~/.zshrc` (never synced, and where tool installers like
   conda/gcloud/uv append).
-- Auto-update: throttled daily background `git pull --ff-only` from the HTTPS URL
-  `HPC_ZSH_REMOTE` (never SSH, so no key prompt can hang it). `zsync` forces it now
-  and reloads.
+- Auto-update: throttled daily background fetch over the HTTPS URL `HPC_ZSH_REMOTE`
+  (never SSH, so no key prompt can hang it). The default deployed checkout
+  (`$HOME/.hpc_scripts`) rebases and, if history diverged (e.g. after a force-push),
+  self-heals by resetting to the remote; a dev or custom checkout only fast-forwards
+  so local commits are never rewritten. `zsync` forces it now and reloads.
 - Dotfile sync: `_hpc_sync_file <repo-path> <dest> <cache-key>` copies repo to
   home, storing a baseline hash in `~/.cache/hpc_<key>_base`. If the home copy
-  diverged from that baseline, it warns instead of overwriting.
+  diverged from that baseline, it warns (with a per-file diff) instead of overwriting.
 - On this dev Mac, `HPC_ZSH_DIR=$HOME/hpc_scripts` (this working checkout), so
   edits are live. Deployed machines use `~/.hpc_scripts`.
 
