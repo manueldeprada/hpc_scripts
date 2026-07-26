@@ -28,6 +28,7 @@ NO_UPDATE=0
 NO_SCRIPTS=0
 NO_CLAUDE=0
 NO_TMUX=0
+NO_TMUX_BIN=0
 
 usage() {
   cat >&2 <<EOF
@@ -39,6 +40,7 @@ Flags (any subset):
   --no-scripts      do not add the bin/ scripts (rtmux, duh) to PATH
   --no-claude-sync  do not sync ~/.claude/CLAUDE.md
   --no-tmux-sync    do not sync ~/.tmux.conf
+  --no-tmux-bin     do not use the bundled tmux binary (Linux)
   -h, --help        show this help
 EOF
 }
@@ -49,6 +51,7 @@ while [ $# -gt 0 ]; do
     --no-scripts)     NO_SCRIPTS=1 ;;
     --no-claude-sync) NO_CLAUDE=1 ;;
     --no-tmux-sync)   NO_TMUX=1 ;;
+    --no-tmux-bin)    NO_TMUX_BIN=1 ;;
     -h|--help)        usage; exit 0 ;;
     *) echo "install.sh: unknown option: $1" >&2; usage; exit 1 ;;
   esac
@@ -58,10 +61,11 @@ done
 # Env-var lines written into ~/.zshrc (above the source line) so the managed
 # config skips whatever the flags turned off.
 opts_block() {
-  if [ "$NO_UPDATE" = 1 ];  then echo 'export HPC_ZSH_NO_UPDATE=1'; fi
-  if [ "$NO_SCRIPTS" = 1 ]; then echo 'export HPC_ZSH_NO_SCRIPTS=1'; fi
-  if [ "$NO_CLAUDE" = 1 ];  then echo 'export HPC_ZSH_NO_CLAUDE_SYNC=1'; fi
-  if [ "$NO_TMUX" = 1 ];    then echo 'export HPC_ZSH_NO_TMUX_SYNC=1'; fi
+  if [ "$NO_UPDATE" = 1 ];   then echo 'export HPC_ZSH_NO_UPDATE=1'; fi
+  if [ "$NO_SCRIPTS" = 1 ];  then echo 'export HPC_ZSH_NO_SCRIPTS=1'; fi
+  if [ "$NO_CLAUDE" = 1 ];   then echo 'export HPC_ZSH_NO_CLAUDE_SYNC=1'; fi
+  if [ "$NO_TMUX" = 1 ];     then echo 'export HPC_ZSH_NO_TMUX_SYNC=1'; fi
+  if [ "$NO_TMUX_BIN" = 1 ]; then echo 'export HPC_ZSH_NO_TMUX_BIN=1'; fi
 }
 
 echo "==> hpc_scripts zsh setup"
@@ -69,11 +73,21 @@ echo "==> hpc_scripts zsh setup"
 # 1. Clone or update the repo -------------------------------------------------
 if [ -d "$HPC_ZSH_DIR/.git" ]; then
   echo "--> updating existing checkout at $HPC_ZSH_DIR"
-  git -C "$HPC_ZSH_DIR" pull --ff-only --quiet || true
+  # The default deployed checkout is a pure consumer: hard-reset to the remote so
+  # it self-heals even if the history diverged (e.g. after a force-push). A custom
+  # HPC_ZSH_DIR is only fast-forwarded, never clobbered.
+  if [ "$HPC_ZSH_DIR" = "$HOME/.hpc_scripts" ] && \
+     git -C "$HPC_ZSH_DIR" fetch --quiet "$REPO_URL" 2>/dev/null; then
+    git -C "$HPC_ZSH_DIR" reset --hard --quiet FETCH_HEAD 2>/dev/null || true
+  else
+    git -C "$HPC_ZSH_DIR" pull --ff-only --quiet 2>/dev/null || true
+  fi
 else
   echo "--> cloning into $HPC_ZSH_DIR"
   git clone --depth=1 "$REPO_URL" "$HPC_ZSH_DIR"
 fi
+# Make a manual `git pull` here rebase by default (no divergence prompt).
+git -C "$HPC_ZSH_DIR" config pull.rebase true 2>/dev/null || true
 
 # 2. Install starship if missing ---------------------------------------------
 if command -v starship >/dev/null 2>&1; then

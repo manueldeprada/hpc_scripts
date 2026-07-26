@@ -29,6 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/manueldeprada/hpc_scripts/main/zsh/
 | `--no-scripts` | do not add the `bin/` scripts (`rtmux`, `duh`) to PATH |
 | `--no-claude-sync` | do not sync `~/.claude/CLAUDE.md` |
 | `--no-tmux-sync` | do not sync `~/.tmux.conf` |
+| `--no-tmux-bin` | do not use the bundled tmux binary (Linux) |
 
 Each flag writes an `export HPC_ZSH_NO_*=1` line near the top of `~/.zshrc`; add or
 remove those lines later to change it without rerunning the installer.

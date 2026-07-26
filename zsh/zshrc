@@ -15,12 +15,28 @@
 
 _hpc_zsh_stamp="${XDG_CACHE_HOME:-$HOME/.cache}/hpc_zsh_lastupdate"
 
-# Pull the latest config over HTTPS, with all interactive prompts disabled so
-# it fails fast instead of blocking the shell if auth is ever needed.
+# Pull the latest config over HTTPS. Interactive prompts are disabled so it fails
+# fast instead of blocking the shell if auth is ever needed. Sets pull.rebase so
+# a manual `git pull` here rebases (no divergence prompt, no merge commits). The
+# default deployed checkout is a pure consumer: it rebases, and if the history
+# diverged badly (e.g. after a force-push) it self-heals by resetting to the
+# remote. A dev or custom checkout only fast-forwards, so local commits are never
+# rewritten by the background update.
 _hpc_zsh_pull() {
   [[ -d "$HPC_ZSH_DIR/.git" ]] || return 1
+  local -a q; [[ "$1" == --quiet ]] && q=(--quiet)
+  local -a g=(git -C "$HPC_ZSH_DIR")
+  local deployed=""; [[ "$HPC_ZSH_DIR" == "$HOME/.hpc_scripts" ]] && deployed=1
+  [[ "$($g config pull.rebase 2>/dev/null)" == true ]] || $g config pull.rebase true 2>/dev/null
   GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes' \
-    git -C "$HPC_ZSH_DIR" pull --ff-only "$@" "$HPC_ZSH_REMOTE"
+    $g fetch $q "$HPC_ZSH_REMOTE" || return 1
+  if [[ -z "$deployed" ]]; then
+    $g merge --ff-only $q FETCH_HEAD 2>/dev/null   # dev/custom: never rewrite local commits
+    return
+  fi
+  $g rebase $q FETCH_HEAD 2>/dev/null && return 0  # deployed: rebase converges cleanly
+  $g rebase --abort 2>/dev/null
+  $g reset --hard $q FETCH_HEAD                    # last resort: self-heal to remote
 }
 
 # ---------------------------------------------------------------------------
@@ -81,16 +97,17 @@ _hpc_sync_file() {
   if [[ "$dh" == "$bh" ]]; then                # local untouched, repo moved on
     cp "$repo" "$dest"; print -r -- "$rh" >| "$basef"; return
   fi
-  # Local diverged from both repo and last-synced baseline: warn, do not touch.
+  # Local diverged from both repo and last-synced baseline: warn, show the diff.
   print -P "%B%F{red}"
   print "  =================================================================="
   print "   WARNING: $dest was changed on THIS machine and differs from the"
-  print "   synced (repo) version."
+  print "   synced (repo) version. Diff below (- repo, + your copy):"
   print ""
   print "     discard it:  rm $dest   (restored from sync on the next shell)"
   print "     keep it:     cp $dest $repo   then commit and push"
   print "  =================================================================="
   print -P "%f%b"
+  git --no-pager diff --no-index --color=auto -- "$repo" "$dest" 2>/dev/null
 }
 
 # ~/.claude/CLAUDE.md (only where Claude Code is set up)
@@ -134,6 +151,7 @@ _hpc_verlt() {   # true if version $1 < version $2
 }
 
 _hpc_setup_tmux() {
+  [[ -n "${HPC_ZSH_NO_TMUX_BIN:-}" ]] && return   # disabled via install --no-tmux-bin
   [[ "$OSTYPE" == linux* ]] || return
   local bundled="$HPC_ZSH_DIR/tmux/bin/tmux-linux-$(uname -m)"
   [[ -x "$bundled" ]] || return
