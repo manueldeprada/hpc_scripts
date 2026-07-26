@@ -89,6 +89,12 @@ duh          # current directory
 duh /path    # a specific directory
 ```
 
+**Bundled tmux (Linux):** the repo ships a statically-linked `tmux` under
+`tmux/bin/`. On Linux, if the machine has no `tmux` or an older one, the setup
+symlinks the bundled binary into `~/.local/bin` (first on PATH) so it wins over
+`/usr/bin/tmux`. If the system `tmux` is the same or newer, the bundled one is not
+used (and a previously placed symlink is removed).
+
 ### fedora gpu quick bring-up
 ```
 sudo dnf config-manager addrepo --from-repofile https://developer.download.nvidia.com/compute/cuda/repos/fedora42/x86_64/cuda-fedora42.repo

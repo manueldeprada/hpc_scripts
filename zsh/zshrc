@@ -124,6 +124,50 @@ if (( ! ${+commands[zsh]} )) && [[ -e /proc/self/exe ]]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Bundled tmux (Linux only): if the system tmux is missing or older than the
+# statically-linked binary shipped in the repo, symlink the bundled one into
+# ~/.local/bin (first on PATH) so it wins over /usr/bin/tmux. Re-evaluated only
+# when the bundled binary changes (keyed on its mtime) to keep startup cheap.
+# ---------------------------------------------------------------------------
+_hpc_verlt() {   # true if version $1 < version $2
+  [[ "$1" != "$2" ]] && [[ "$(print -rl -- "$1" "$2" | sort -V 2>/dev/null | head -1)" == "$1" ]]
+}
+
+_hpc_setup_tmux() {
+  [[ "$OSTYPE" == linux* ]] || return
+  local bundled="$HPC_ZSH_DIR/tmux/bin/tmux-linux-$(uname -m)"
+  [[ -x "$bundled" ]] || return
+  local dest="$HOME/.local/bin/tmux"
+  local stamp="${XDG_CACHE_HOME:-$HOME/.cache}/hpc_tmuxbin_base"
+
+  # Re-check only when the bundled binary changes (its mtime), else bail cheaply.
+  local mt=$(stat -c %Y "$bundled" 2>/dev/null)
+  [[ -f "$stamp" && "$(<"$stamp")" == "$mt" ]] && return
+
+  local bver=$("$bundled" -V 2>/dev/null | awk '{print $2}')
+  [[ -n "$bver" ]] || return
+
+  # System tmux = first tmux on PATH that is not our own ~/.local/bin link.
+  local d sys="" sver=""
+  for d in $path; do
+    [[ "$d" == "$HOME/.local/bin" ]] && continue
+    [[ -x "$d/tmux" ]] && { sys="$d/tmux"; break; }
+  done
+  [[ -n "$sys" ]] && sver=$("$sys" -V 2>/dev/null | awk '{print $2}')
+
+  if [[ -z "$sver" ]] || _hpc_verlt "$sver" "$bver"; then
+    if [[ "$(readlink -- "$dest" 2>/dev/null)" != "$bundled" ]]; then
+      mkdir -p "${dest:h}"; ln -sf "$bundled" "$dest"; rehash
+    fi
+  elif [[ -L "$dest" && "$(readlink -- "$dest" 2>/dev/null)" == "$bundled" ]]; then
+    rm -f "$dest"; rehash   # system tmux is new enough now; stop shadowing it
+  fi
+
+  mkdir -p "${stamp:h}"; print -r -- "$mt" >| "$stamp"
+}
+_hpc_setup_tmux
+
+# ---------------------------------------------------------------------------
 # antidote plugin manager
 # ---------------------------------------------------------------------------
 [[ -e ${ZDOTDIR:-$HOME}/.antidote ]] ||
