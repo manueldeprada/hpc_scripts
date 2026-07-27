@@ -407,11 +407,14 @@ export AUTOSSH_POLL="${AUTOSSH_POLL:-15}"
 
 if [ -n "$SESSION" ]; then
   QSESSION="$(shell_quote "$SESSION")"
-  # -u forces UTF-8 output so Nerd Font glyphs render even when the remote
-  # command shell starts in a non-UTF-8 locale (unlike an interactive login).
-  REMOTE_CMD="tmux -u new-session -A -s $QSESSION"
+  # Prepend ~/.local/bin so the bundled tmux (if the managed zsh set one up) is
+  # used here too. This non-login shell does not source ~/.zshrc, so without this
+  # it would fall back to the system tmux and mismatch the version of the server
+  # started by interactive sessions ("server exited unexpectedly"). -u forces
+  # UTF-8 output so Nerd Font glyphs render in this shell's locale.
+  REMOTE_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux -u new-session -A -s $QSESSION"
 else
-  REMOTE_CMD="tmux -u attach || tmux -u new-session"
+  REMOTE_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux -u attach || tmux -u new-session"
 fi
 
 REAL_SSH="$(command -v ssh)"
