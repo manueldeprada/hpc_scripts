@@ -122,11 +122,25 @@ _hpc_sync_file() {
 # PATH: user-local bin (uv, pipx, ...) + the repo's synced scripts (rtmux, duh).
 # --no-scripts (HPC_ZSH_NO_SCRIPTS) leaves the repo bin/ off PATH.
 # ---------------------------------------------------------------------------
+typeset -U path PATH   # keep PATH entries unique (dedupes the ~/.zshenv overlap)
 if [[ -n "${HPC_ZSH_NO_SCRIPTS:-}" ]]; then
   export PATH="$HOME/.local/bin:$PATH"
 else
   export PATH="$HOME/.local/bin:$HPC_ZSH_DIR/zsh/bin:$PATH"
 fi
+
+# Make ~/.local/bin available to non-interactive shells too (e.g. `ssh host
+# tmux ...`, which never sources ~/.zshrc), by seeding ~/.zshenv once. ~/.zshenv
+# is sourced by every zsh. Idempotent and appends, never overwrites.
+_hpc_seed_zshenv() {
+  local f="$HOME/.zshenv" m="# hpc_scripts: ~/.local/bin on PATH"
+  grep -qF "$m" "$f" 2>/dev/null && return
+  {
+    print -r -- "$m"
+    print -r -- 'case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac'
+  } >> "$f"
+}
+_hpc_seed_zshenv
 
 # Some clusters load zsh from a module directory that is not on $PATH, which
 # breaks tools that shell out to `zsh` (antidote and friends). If zsh is not on

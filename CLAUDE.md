@@ -20,8 +20,9 @@ machine (laptop, HPC login nodes, personal servers) in sync from this repo.
   `--no-tmux-sync`. Each writes an `export HPC_ZSH_NO_*=1` line into `~/.zshrc`.
 - `zsh/zshrc` - the managed, cloud-synced config, sourced near the top of
   `~/.zshrc`. Does: daily background auto-update, PATH, antidote, starship,
-  keybindings, dotfile sync, and a zsh-on-PATH fallback for clusters that load
-  zsh from a module dir.
+  keybindings, dotfile sync, a zsh-on-PATH fallback for clusters that load zsh
+  from a module dir, and seeding `~/.zshenv` so `~/.local/bin` is on PATH for
+  non-interactive shells (e.g. `ssh host tmux ...`).
 - `zsh/.zsh_plugins.txt` - antidote plugin list. `zsh/.zsh_plugins.zsh` is
   antidote's compiled cache: gitignored, machine-specific, regenerated per host.
 - `zsh/starship.toml` - starship prompt (gruvbox-rainbow preset, restructured:

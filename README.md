@@ -94,7 +94,9 @@ duh /path    # a specific directory
 `tmux/bin/`. On Linux, if the machine has no `tmux` or an older one, the setup
 symlinks the bundled binary into `~/.local/bin` (first on PATH) so it wins over
 `/usr/bin/tmux`. If the system `tmux` is the same or newer, the bundled one is not
-used (and a previously placed symlink is removed).
+used (and a previously placed symlink is removed). So non-interactive shells use it
+too (`ssh host tmux ...`, `rtmux`), the managed config adds `~/.local/bin` to
+`~/.zshenv` (sourced by every zsh) and `rtmux` prepends it to the remote `PATH`.
 
 ### fedora gpu quick bring-up
 ```
