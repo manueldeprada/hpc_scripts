@@ -122,9 +122,11 @@ usage() {
   echo "Usage:" >&2
   echo "  $0 --configure-ssh" >&2
   echo "  $0 [--wait|--no-wait] [-J jump_host] user@remote_host [session_name]" >&2
+  echo "  $0 [-J jump_host] user@remote_host ls" >&2
   echo >&2
   echo "Examples:" >&2
   echo "  $0 mdeprada@eu-login-13.euler.ethz.ch" >&2
+  echo "  $0 mdeprada@eu-login-13.euler.ethz.ch ls" >&2
   echo "  $0 -J middle-ssh mdeprada@eu-login-13.euler.ethz.ch main" >&2
   echo "  $0 -J bastion1,bastion2 user@remote main" >&2
   echo "  $0 --no-wait user@remote main" >&2
@@ -401,6 +403,25 @@ fi
 
 REMOTE="$1"
 SESSION="${2:-}"
+
+if [ "$SESSION" = "ls" ]; then
+  # One-shot listing, no autossh/reconnect loop. Same PATH prepend as below so
+  # the bundled tmux server (if any) is the one queried.
+  LS_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux list-sessions 2>/dev/null || echo 'no tmux sessions'"
+  if [ -n "$JUMP" ]; then
+    exec ssh -J "$JUMP" \
+      -o BatchMode=yes \
+      -o StrictHostKeyChecking=accept-new \
+      -o ConnectTimeout=10 \
+      "$REMOTE" "$LS_CMD"
+  else
+    exec ssh \
+      -o BatchMode=yes \
+      -o StrictHostKeyChecking=accept-new \
+      -o ConnectTimeout=10 \
+      "$REMOTE" "$LS_CMD"
+  fi
+fi
 
 export AUTOSSH_GATETIME="${AUTOSSH_GATETIME:-0}"
 export AUTOSSH_POLL="${AUTOSSH_POLL:-15}"
