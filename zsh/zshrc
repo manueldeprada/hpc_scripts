@@ -110,9 +110,12 @@ _hpc_sync_file() {
   git --no-pager diff --no-index --color=auto -- "$repo" "$dest" 2>/dev/null
 }
 
-# ~/.claude/CLAUDE.md (only where Claude Code is set up)
-[[ -n "${HPC_ZSH_NO_CLAUDE_SYNC:-}" ]] || [[ ! -d "$HOME/.claude" ]] ||
+# ~/.claude/CLAUDE.md, settings.json, statusline-command.sh (only where Claude Code is set up)
+if [[ -z "${HPC_ZSH_NO_CLAUDE_SYNC:-}" ]] && [[ -d "$HOME/.claude" ]]; then
   _hpc_sync_file "claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md" claudemd
+  _hpc_sync_file "claude/settings.json" "$HOME/.claude/settings.json" claudesettings
+  _hpc_sync_file "claude/statusline-command.sh" "$HOME/.claude/statusline-command.sh" claudestatusline
+fi
 
 # ~/.tmux.conf
 [[ -n "${HPC_ZSH_NO_TMUX_SYNC:-}" ]] ||

@@ -29,7 +29,8 @@ machine (laptop, HPC login nodes, personal servers) in sync from this repo.
   os/dir/git on the left, env + language versions + `user@host` on the right).
 - `zsh/bin/{rtmux,duh}` - scripts put on PATH and synced. rtmux = reconnecting
   tmux over ssh (autossh); duh = incremental `du -sh | sort`.
-- `claude/CLAUDE.md`, `tmux/tmux.conf` - synced dotfile payloads (see above).
+- `claude/CLAUDE.md`, `claude/settings.json`, `claude/statusline-command.sh`,
+  `tmux/tmux.conf` - synced dotfile payloads (see above).
 - `tmux/bin/tmux-linux-<arch>` - statically-linked tmux binary. On Linux,
   `_hpc_setup_tmux` in `zsh/zshrc` symlinks it into `~/.local/bin` when the system
   tmux is missing or older (compared via `tmux -V` and `sort -V`).
