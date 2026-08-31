@@ -110,11 +110,28 @@ _hpc_sync_file() {
   git --no-pager diff --no-index --color=auto -- "$repo" "$dest" 2>/dev/null
 }
 
-# ~/.claude/CLAUDE.md, settings.json, statusline-command.sh (only where Claude Code is set up)
+# Ensure ~/.claude/settings.json has our statusLine wired in, merged into
+# whatever is already there (settings.json changes machine-to-machine, e.g.
+# the default model, so it is never synced wholesale like the other payloads).
+_hpc_ensure_claude_statusline() {
+  local f="$HOME/.claude/settings.json"
+  command -v jq >/dev/null 2>&1 || return
+  local target='{"type":"command","command":"bash ~/.claude/statusline-command.sh"}'
+  if [[ ! -f "$f" ]]; then
+    mkdir -p "${f:h}"
+    jq -n --argjson sl "$target" '{statusLine: $sl}' >| "$f"
+    return
+  fi
+  [[ "$(jq -c '.statusLine // empty' "$f" 2>/dev/null)" == "$target" ]] && return
+  local tmp="${f}.tmp.$$"
+  jq --argjson sl "$target" '.statusLine = $sl' "$f" >| "$tmp" && mv "$tmp" "$f"
+}
+
+# ~/.claude/CLAUDE.md, statusline-command.sh (only where Claude Code is set up)
 if [[ -z "${HPC_ZSH_NO_CLAUDE_SYNC:-}" ]] && [[ -d "$HOME/.claude" ]]; then
   _hpc_sync_file "claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md" claudemd
-  _hpc_sync_file "claude/settings.json" "$HOME/.claude/settings.json" claudesettings
   _hpc_sync_file "claude/statusline-command.sh" "$HOME/.claude/statusline-command.sh" claudestatusline
+  _hpc_ensure_claude_statusline
 fi
 
 # ~/.tmux.conf
