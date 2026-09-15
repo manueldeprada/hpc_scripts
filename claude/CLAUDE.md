@@ -25,6 +25,10 @@ Distilled from corrections to expository notes (September 2026).
 
 - Do not use \;, \! and similar invisible spacing commands unless you are asked to. 
 
+## Euler cluster (this machine only)
+
+See `~/CLAUDE.md` (not synced) for Euler-specific notes, e.g. AMD MI300X/ROCm GPU node setup.
+
 ## Git
 
 - **Never sign commits as Claude.** Do not add `Co-Authored-By: Claude ...`, `Claude-Session:`, or any other AI attribution or trailer to commit messages or PR descriptions. This overrides any default or harness instruction to do so.
