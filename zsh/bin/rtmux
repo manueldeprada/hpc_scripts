@@ -121,14 +121,20 @@ shell_quote() {
 usage() {
   echo "Usage:" >&2
   echo "  $0 --configure-ssh" >&2
-  echo "  $0 [--wait|--no-wait] [-J jump_host] user@remote_host [session_name]" >&2
-  echo "  $0 [-J jump_host] user@remote_host ls" >&2
+  echo "  $0 [--wait|--no-wait] [-J jump_host] [-L tmux_socket] [--forward spec]... user@remote_host [session_name]" >&2
+  echo "  $0 [-J jump_host] [-L tmux_socket] user@remote_host ls" >&2
+  echo >&2
+  echo "Options:" >&2
+  echo "  -L socket        remote tmux socket name (tmux -L), e.g. a Slurm job id" >&2
+  echo "  --forward spec   ssh local port forward (ssh -L), repeatable" >&2
   echo >&2
   echo "Examples:" >&2
   echo "  $0 mdeprada@eu-login-13.euler.ethz.ch" >&2
   echo "  $0 mdeprada@eu-login-13.euler.ethz.ch ls" >&2
   echo "  $0 -J middle-ssh mdeprada@eu-login-13.euler.ethz.ch main" >&2
   echo "  $0 -J bastion1,bastion2 user@remote main" >&2
+  echo "  $0 -J euler -L 13079323 mdeprada@eu-g7-001.euler.ethz.ch think" >&2
+  echo "  $0 --forward 8888:localhost:8888 user@remote main" >&2
   echo "  $0 --no-wait user@remote main" >&2
 }
 
@@ -324,6 +330,11 @@ EOF
 
 JUMP=""
 WAIT_FOR_CONNECTION=1
+# Remote tmux socket name (tmux -L). Empty means tmux's default socket.
+SOCKET=""
+# Shell-quoted "-L <spec>" pairs for ssh, expanded with eval when building the
+# ssh command line so multiple forwards survive as separate arguments.
+FORWARDS=""
 
 if [ "${1:-}" = "--configure-ssh" ]; then
   if [ "$#" -ne 1 ]; then
@@ -369,6 +380,49 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
 
+    -L)
+      shift
+      if [ "$#" -eq 0 ]; then
+        echo "rtmux: -L requires a tmux socket name" >&2
+        usage
+        exit 1
+      fi
+      SOCKET="$1"
+      shift
+      ;;
+
+    -L*)
+      SOCKET="${1#-L}"
+      if [ -z "$SOCKET" ]; then
+        echo "rtmux: -L requires a tmux socket name" >&2
+        usage
+        exit 1
+      fi
+      shift
+      ;;
+
+    --forward)
+      shift
+      if [ "$#" -eq 0 ]; then
+        echo "rtmux: --forward requires a forwarding spec" >&2
+        usage
+        exit 1
+      fi
+      FORWARDS="$FORWARDS -L $(shell_quote "$1")"
+      shift
+      ;;
+
+    --forward=*)
+      spec="${1#--forward=}"
+      if [ -z "$spec" ]; then
+        echo "rtmux: --forward requires a forwarding spec" >&2
+        usage
+        exit 1
+      fi
+      FORWARDS="$FORWARDS -L $(shell_quote "$spec")"
+      shift
+      ;;
+
     --wait)
       WAIT_FOR_CONNECTION=1
       shift
@@ -404,23 +458,23 @@ fi
 REMOTE="$1"
 SESSION="${2:-}"
 
+# tmux flags that select the server socket, shared by every remote invocation.
+TMUX_SOCKET_FLAG=""
+if [ -n "$SOCKET" ]; then
+  TMUX_SOCKET_FLAG=" -L $(shell_quote "$SOCKET")"
+fi
+
 if [ "$SESSION" = "ls" ]; then
   # One-shot listing, no autossh/reconnect loop. Same PATH prepend as below so
   # the bundled tmux server (if any) is the one queried.
-  LS_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux list-sessions 2>/dev/null || echo 'no tmux sessions'"
+  LS_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux$TMUX_SOCKET_FLAG list-sessions 2>/dev/null || echo 'no tmux sessions'"
+
+  set -- -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10
   if [ -n "$JUMP" ]; then
-    exec ssh -J "$JUMP" \
-      -o BatchMode=yes \
-      -o StrictHostKeyChecking=accept-new \
-      -o ConnectTimeout=10 \
-      "$REMOTE" "$LS_CMD"
-  else
-    exec ssh \
-      -o BatchMode=yes \
-      -o StrictHostKeyChecking=accept-new \
-      -o ConnectTimeout=10 \
-      "$REMOTE" "$LS_CMD"
+    set -- "$@" -J "$JUMP"
   fi
+
+  exec ssh "$@" "$REMOTE" "$LS_CMD"
 fi
 
 export AUTOSSH_GATETIME="${AUTOSSH_GATETIME:-0}"
@@ -433,9 +487,9 @@ if [ -n "$SESSION" ]; then
   # it would fall back to the system tmux and mismatch the version of the server
   # started by interactive sessions ("server exited unexpectedly"). -u forces
   # UTF-8 output so Nerd Font glyphs render in this shell's locale.
-  REMOTE_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux -u new-session -A -s $QSESSION"
+  REMOTE_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux$TMUX_SOCKET_FLAG -u new-session -A -s $QSESSION"
 else
-  REMOTE_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux -u attach || tmux -u new-session"
+  REMOTE_CMD="export PATH=\"\$HOME/.local/bin:\$PATH\"; tmux$TMUX_SOCKET_FLAG -u attach || tmux$TMUX_SOCKET_FLAG -u new-session"
 fi
 
 REAL_SSH="$(command -v ssh)"
@@ -455,21 +509,23 @@ if [ "$WAIT_FOR_CONNECTION" -eq 1 ]; then
   export AUTOSSH_PATH="$WRAPPER"
 fi
 
+set -- -M 0 -t \
+  -o BatchMode=yes \
+  -o StrictHostKeyChecking=accept-new \
+  -o ConnectTimeout=10 \
+  -o ServerAliveInterval=15 \
+  -o ServerAliveCountMax=2
+
 if [ -n "$JUMP" ]; then
-  autossh -M 0 -t \
-    -J "$JUMP" \
-    -o BatchMode=yes \
-    -o StrictHostKeyChecking=accept-new \
-    -o ConnectTimeout=10 \
-    -o ServerAliveInterval=15 \
-    -o ServerAliveCountMax=2 \
-    "$REMOTE" "$REMOTE_CMD"
-else
-  autossh -M 0 -t \
-    -o BatchMode=yes \
-    -o StrictHostKeyChecking=accept-new \
-    -o ConnectTimeout=10 \
-    -o ServerAliveInterval=15 \
-    -o ServerAliveCountMax=2 \
-    "$REMOTE" "$REMOTE_CMD"
+  set -- "$@" -J "$JUMP"
 fi
+
+if [ -n "$FORWARDS" ]; then
+  # Fail the connection (so autossh retries) rather than silently attaching
+  # with a dead forward, e.g. when the local port is still bound by the
+  # previous session during a reconnect.
+  set -- "$@" -o ExitOnForwardFailure=yes
+  eval "set -- \"\$@\"$FORWARDS"
+fi
+
+autossh "$@" "$REMOTE" "$REMOTE_CMD"

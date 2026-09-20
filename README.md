@@ -76,11 +76,13 @@ chsh -s "$(which zsh)"   # make zsh the default shell (see Euler note below if c
 ### synced scripts: rtmux and duh
 The setup puts two scripts from `zsh/bin/` on your PATH, kept up to date with the rest of the config.
 
-**`rtmux`**: reconnecting tmux over SSH. It wraps `autossh` to hold an SSH connection to a host and attach to (or create) a `tmux` session, reattaching by itself after network drops or laptop sleep. Supports jump hosts, waits for connectivity before dialing, and restores the local terminal after a disconnect. Needs `autossh` locally and `tmux` on the remote.
+**`rtmux`**: reconnecting tmux over SSH. It wraps `autossh` to hold an SSH connection to a host and attach to (or create) a `tmux` session, reattaching by itself after network drops or laptop sleep. Supports jump hosts, alternate tmux sockets, and local port forwarding, waits for connectivity before dialing, and restores the local terminal after a disconnect. Needs `autossh` locally and `tmux` on the remote.
 ```bash
 rtmux user@host                  # attach to (or create) the default session
 rtmux user@host main             # named session "main"
 rtmux -J bastion user@host main  # through a jump host (also -J b1,b2)
+rtmux -L 13079323 user@host think             # remote tmux socket (tmux -L), e.g. a Slurm job id
+rtmux --forward 8888:localhost:8888 user@host  # ssh local port forward (repeatable)
 rtmux --configure-ssh            # write ssh keepalive defaults to ~/.ssh/config
 ```
 
