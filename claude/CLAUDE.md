@@ -9,7 +9,7 @@ Use contemporary American English. Singular "they" and split infinitives are acc
 ## Language and tone
 
 - Use **American English** spelling and conventions everywhere: "modeled," "normalize," "behavior," "color," and "center."
-- **Never use em dashes**, including the LaTeX `---` equivalent in prose. Use commas, colons, parentheses, or separate sentences. Prefer a period and a new sentence to a semicolon; use semicolons very sparingly.
+- **Never use em dashes**, including the LaTeX `---` equivalent in prose. Use commas, colons, parentheses, or separate sentences. Prefer a period and a new sentence to a semicolon, and use semicolons very sparingly.
 - **No adjectivation or editorializing.** State facts and numbers and let the data carry the weight. Keep modifiers that specify technical properties or distinguish cases. Delete modifiers that merely express approval, importance, surprise, or disappointment.
 - Avoid hype and filler such as "expensive lesson," "the whole story," "the real killer," "hard-won," "promising," "headline," "mildly," "crucially," and "genuinely." Prefer "+2.4, within the ±2-3pt noise band" over "a promising gain."
 - Use plain words and direct verbs: "use," "fit," "measure," "write," and "try." Prefer "is" and "has" to ornamental substitutes such as "serves as," "stands as," "boasts," and "features."
