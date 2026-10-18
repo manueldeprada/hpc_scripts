@@ -79,7 +79,7 @@ Use contemporary American English. Singular "they" and split infinitives are acc
 - Tie examples back to their derivation, for example "lengths {1,2,2} imply A=0, B=10, C=11." Anchor abstractions in a specific use when it helps, for example "this is what ASCII does."
 - Use one figure per new idea. For a process, prefer a wide, flat SVG showing the state at each step.
 - Label figures so readers can identify axes, units, conditions, and uncertainty. Captions should supply the information needed to interpret the figure without duplicating the surrounding argument.
-- Use headings that name the result or concept, for example "Shannon's source coding theorem." Put a subtitle after a colon. Use sentence case except for proper names.
+- Use headings that name the result or concept, for example "Shannon's source coding theorem." Put a subtitle after a colon. Use sentence case except for proper names. Default to noun phrases for headings, titles, and labels ("Changes in the official stager" over "How the official stager changed"). A "How ...", "Why ...", or "What ..." clause is fine when the section answers that question, but do not reach for it by habit.
 - In notes and documents, prefer bold run-in labels phrased directly: `**When to stop decoding.**` Avoid inverted labels such as `**Decoding, and when to stop.**` Bold the one-sentence takeaway of a section, using an existing sentence rather than adding a recap.
 - Use emphasis selectively. Avoid walls of bold text, repeated highlighting of the same term, and lists in which every sentence receives a label.
 - Use lists for parallel items, steps, and comparisons. Use connected prose for an argument. Avoid tiny tables when a sentence expresses the information more clearly.
