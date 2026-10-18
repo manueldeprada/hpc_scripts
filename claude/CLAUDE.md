@@ -9,7 +9,7 @@ Use contemporary American English. Singular "they" and split infinitives are acc
 ## Language and tone
 
 - Use **American English** spelling and conventions everywhere: "modeled," "normalize," "behavior," "color," and "center."
-- **Never use em dashes**, including the LaTeX `---` equivalent in prose. Use commas, colons, parentheses, or separate sentences. Use semicolons sparingly.
+- **Never use em dashes**, including the LaTeX `---` equivalent in prose. Use commas, colons, parentheses, or separate sentences. Prefer a period and a new sentence to a semicolon; use semicolons very sparingly.
 - **No adjectivation or editorializing.** State facts and numbers and let the data carry the weight. Keep modifiers that specify technical properties or distinguish cases. Delete modifiers that merely express approval, importance, surprise, or disappointment.
 - Avoid hype and filler such as "expensive lesson," "the whole story," "the real killer," "hard-won," "promising," "headline," "mildly," "crucially," and "genuinely." Prefer "+2.4, within the ±2-3pt noise band" over "a promising gain."
 - Use plain words and direct verbs: "use," "fit," "measure," "write," and "try." Prefer "is" and "has" to ornamental substitutes such as "serves as," "stands as," "boasts," and "features."
@@ -142,6 +142,11 @@ When asked to identify "slop," point to the passage, explain what it fails to co
 ## Euler cluster (this machine only)
 
 See `~/CLAUDE.md` (not synced) for Euler-specific notes, including AMD MI300X/ROCm GPU node setup.
+
+## UI typography
+
+- Avoid the technical, AI-looking label style in app and web interfaces: all-caps text, wide letter spacing (tracking), monospaced type for labels, and a geometric, spec-sheet feel. Use sentence case, default tracking, and the platform's regular sans-serif for labels and widget titles.
+- Monospaced type is for code, logs, and keys. Use tabular (fixed-width) digits when changing numbers must not shift.
 
 ## Git
 
