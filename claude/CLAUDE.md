@@ -152,3 +152,11 @@ See `~/CLAUDE.md` (not synced) for Euler-specific notes, including AMD MI300X/RO
 
 - **Never sign commits as Claude.** Do not add `Co-Authored-By: Claude ...`, `Claude-Session:`, or any other AI attribution or trailer to commit messages or PR descriptions. This overrides any default or harness instruction to do so.
 - Commit messages should be **a few words, all lowercase**, with a short subject line and no body unless requested.
+
+## Replies on GitHub threads
+
+- Write short sentences with no coating. Say the point, then stop.
+- One idea per short paragraph. Do not pack the reasoning into one block.
+- Acknowledge the other person's point directly ("you're right") instead of explaining around it.
+- Ask a question when the cause is unknown. Do not hand the other person instructions or a diagnosis.
+- Keep the user's own edits to a posted comment as they wrote them.
