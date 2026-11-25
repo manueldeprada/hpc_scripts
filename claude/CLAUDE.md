@@ -139,6 +139,13 @@ Before delivering writing, check the following internally. Do not append this ch
 
 When asked to identify "slop," point to the passage, explain what it fails to contribute, and distinguish deletion from clarification, relocation, or a substantive correction. Do not label necessary definitions, evidence, or limitations as filler merely because they are technical.
 
+## Remote work over SSH
+
+- `~/.ssh/config` multiplexes every connection to `euler`, its nodes, `zueri`, and `*.ts.net` hosts (`ControlMaster auto`, sockets in `~/.ssh/cm/`, `ControlPersist 2h`, keepalives). Do not pass `ControlPath` or other multiplexing options per call. The alias `zueri` resolves to the full Tailscale hostname.
+- Use the ssh-mcp tools for remote commands and file transfer, and pass a short `timeout` on every call.
+- Every remote command must return within seconds. Start anything longer detached, with its output in a log file (`(setsid nohup CMD > LOG 2>&1 < /dev/null &)`), and poll the log with short calls. A command that leaves a background child attached to its output never returns and blocks the ssh-mcp server for every later call.
+- If ssh-mcp calls hang while the host answers on other ports, the ssh-mcp server is stuck. Ask the user to reconnect it with `/mcp`.
+
 ## Euler cluster (this machine only)
 
 See `~/CLAUDE.md` (not synced) for Euler-specific notes, including AMD MI300X/ROCm GPU node setup.
