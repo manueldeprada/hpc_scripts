@@ -160,3 +160,8 @@ See `~/CLAUDE.md` (not synced) for Euler-specific notes, including AMD MI300X/RO
 - Acknowledge the other person's point directly ("you're right") instead of explaining around it.
 - Ask a question when the cause is unknown. Do not hand the other person instructions or a diagnosis.
 - Keep the user's own edits to a posted comment as they wrote them.
+
+## Push notifications
+
+- **Send a push notification (PushNotification tool) when a user-facing service is down or a background operation the user is waiting on finishes, fails, or needs a decision.** Examples: a public demo or site goes down, a failover or deploy succeeds or fails, a permission denial blocks a fix to an outage. Do not wait for the user to ask for status.
+- Push only for events that change what the user would do next, not routine progress.
