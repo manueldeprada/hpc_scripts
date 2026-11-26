@@ -146,6 +146,15 @@ When asked to identify "slop," point to the passage, explain what it fails to co
 - Every remote command must return within seconds. Start anything longer detached, with its output in a log file (`(setsid nohup CMD > LOG 2>&1 < /dev/null &)`), and poll the log with short calls. A command that leaves a background child attached to its output never returns and blocks the ssh-mcp server for every later call.
 - If ssh-mcp calls hang while the host answers on other ports, the ssh-mcp server is stuck. Ask the user to reconnect it with `/mcp`.
 
+## Scratch files and reusable tools
+
+- The session scratchpad under `/private/tmp` is wiped by reboots and cleanup. Keep in it only what is safe to lose.
+- Anything that could be useful later goes in `~/claude-scratch/`, which is outside every git repository and outside synced folders: scripts, capture or build tooling, intermediate data that took work to produce, and preview builds.
+  - `~/claude-scratch/tools/`: installs shared across projects, such as Playwright (`tools/playwright`, a Node project that launches the system Chrome with `channel: 'chrome'`). Reuse these before installing anything again. `tools/README.md` lists each tool and how to call it, and gets a line for every new one.
+- Never download a browser. For looking at or using a page, especially one that needs the user's sign-ins or network, use Claude in Chrome (the user's own browser). For scripted, repeatable captures (fixed viewport, high device scale, crops), use the Playwright tool above with the system Chrome.
+  - `~/claude-scratch/<project>/`: one folder per project, named after its directory, for that project's scripts and outputs. Write the full path when naming a file to the user.
+- Do not put scratch folders inside project directories, because they end up in git and in pushes (for example, to Overleaf).
+
 ## Euler cluster (this machine only)
 
 See `~/CLAUDE.md` (not synced) for Euler-specific notes, including AMD MI300X/ROCm GPU node setup.
